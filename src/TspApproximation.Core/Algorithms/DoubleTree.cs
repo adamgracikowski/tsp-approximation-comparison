@@ -7,12 +7,15 @@ public sealed class DoubleTree : IAlgorithm
         var mstResult = input.Graph.Mst();
         var root = mstResult.Root;
         var adjacencyList = mstResult.AdjacencyList;
+
         List<int> route = new(input.Graph.VertexCount);
         Stack<int> visitStack = new();
         visitStack.Push(root);
+
         var visited = new bool[input.Graph.VertexCount];
         var lastVertex = -1;
         var distance = 0;
+
         while (visitStack.Count > 0)
         {
             var v = visitStack.Pop();
