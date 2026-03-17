@@ -5,7 +5,7 @@ public sealed record TspInput(
 );
 
 public sealed record TspOutput(
-    IReadOnlyList<int> Route, 
+    IReadOnlyList<int> Route,
     int TotalDistance
 );
 

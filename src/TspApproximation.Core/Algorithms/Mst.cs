@@ -1,8 +1,8 @@
 ﻿namespace TspApproximation.Core.Algorithms;
 
 public sealed record Edge(
-    int U, 
-    int V, 
+    int U,
+    int V,
     int Weight
 );
 

@@ -96,7 +96,7 @@ internal class Program
             Console.ResetColor();
         }
     }
-        static void HandleParseError(IEnumerable<Error> errs)
+    static void HandleParseError(IEnumerable<Error> errs)
     {
         // CommandLineParser will automatically print the help screen here.
     }
