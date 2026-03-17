@@ -5,12 +5,11 @@ public sealed class DoubleTree : IAlgorithm
     public TspOutput Solve(TspInput input)
     {
         var mstResult = input.Graph.Mst();
-        var root = mstResult.Root;
         var adjacencyList = mstResult.AdjacencyList;
 
         List<int> route = new(input.Graph.VertexCount);
         Stack<int> visitStack = new();
-        visitStack.Push(root);
+        visitStack.Push(0);
 
         var visited = new bool[input.Graph.VertexCount];
         var lastVertex = -1;
@@ -41,8 +40,8 @@ public sealed class DoubleTree : IAlgorithm
             }
         }
 
-        route.Add(root);
-        distance += input.Graph[lastVertex, root];
+        route.Add(0);
+        distance += input.Graph[lastVertex, 0];
 
         return new TspOutput(route, distance);
     }
