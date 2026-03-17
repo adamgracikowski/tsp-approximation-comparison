@@ -6,13 +6,25 @@ public sealed class CsvResult
 
     public string Algorithm { get; set; } = string.Empty;
 
-    public int VertexCount { get; set; }
+    public int VertexCount
+    {
+        get; set;
+    }
 
-    public int TotalDistance { get; set; }
+    public int TotalDistance
+    {
+        get; set;
+    }
 
-    public int RouteLength { get; set; }
+    public int RouteLength
+    {
+        get; set;
+    }
 
     public string Route { get; set; } = string.Empty;
 
-    public double TotalElapsedMiliseconds { get; set; }
+    public double TotalElapsedMiliseconds
+    {
+        get; set;
+    }
 }

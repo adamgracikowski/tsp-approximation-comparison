@@ -8,8 +8,14 @@ public class Options
     public string FilePath { get; set; } = string.Empty;
 
     [Option('o', "output", Required = false, HelpText = "Path to the output file where the result will be saved.")]
-    public string? OutputPath { get; set; }
+    public string? OutputPath
+    {
+        get; set;
+    }
 
     [Option('d', "double-tree", Required = false, HelpText = "Forces the use of the Double Tree algorithm instead of the default Christofides.")]
-    public bool UseDoubleTree { get; set; }
+    public bool UseDoubleTree
+    {
+        get; set;
+    }
 }

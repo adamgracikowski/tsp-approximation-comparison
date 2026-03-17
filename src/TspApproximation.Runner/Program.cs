@@ -1,7 +1,10 @@
-﻿using CommandLine;
-using CsvHelper;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Globalization;
+
+using CommandLine;
+
+using CsvHelper;
+
 using TspApproximation.Core;
 using TspApproximation.Core.Algorithms;
 using TspApproximation.Core.IO;

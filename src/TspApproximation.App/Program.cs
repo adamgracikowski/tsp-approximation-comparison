@@ -1,5 +1,7 @@
-﻿using CommandLine;
-using System.Diagnostics;
+﻿using System.Diagnostics;
+
+using CommandLine;
+
 using TspApproximation.Core;
 using TspApproximation.Core.Algorithms;
 using TspApproximation.Core.IO;

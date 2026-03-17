@@ -14,5 +14,8 @@ public sealed class Graph
         get => _adjacencyMatrix[i, j];
     }
 
-    private int[,] _adjacencyMatrix { get; }
+    private int[,] _adjacencyMatrix
+    {
+        get;
+    }
 }
