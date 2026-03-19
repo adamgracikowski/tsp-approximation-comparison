@@ -10,7 +10,7 @@ public static class TspInputLoader
         }
 
         var lines = File.ReadLines(filePath)
-            .Where(l => !string.IsNullOrWhiteSpace(l))
+            .Where(l => !string.IsNullOrWhiteSpace(l) || !l.StartsWith('#'))
             .ToArray();
 
         if (lines.Length == 0)
