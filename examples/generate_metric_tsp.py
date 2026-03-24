@@ -45,8 +45,9 @@ def save_to_file(matrix, filepath):
 
 def main():
     parser = argparse.ArgumentParser(description="Metric TSP instance generator")
-    parser.add_argument("-v", "--vertices", type=int, default=10, help="Number of vertices in the graph (default: 10)")
-    parser.add_argument("-c", "--count", type=int, default=5, help="Number of files to generate (default: 5)")
+    parser.add_argument("--start", type=int, required=True, help="Starting number of vertices")
+    parser.add_argument("--step", type=int, required=True, help="Step size for increasing vertices")
+    parser.add_argument("-c", "--count", type=int, required=True, help="Number of files to generate")
     parser.add_argument("-s", "--size", type=int, default=1000, help="Maximum coordinate value (default: 1000)")
     parser.add_argument("-d", "--dir", type=str, default="data", help="Target directory for files (default: 'data')")
     
@@ -55,15 +56,21 @@ def main():
     if not os.path.exists(args.dir):
         os.makedirs(args.dir)
         
-    print(f"Generating {args.count} instances with {args.vertices} vertices each...")
+    print(f"Generating {args.count} instances starting from {args.start} vertices with a step of {args.step}...")
     
-    for i in range(1, args.count + 1):
-        filename = f"graph_v{args.vertices}_{i:03d}.txt"
+    for i in range(args.count):
+        current_vertices = args.start + i * args.step
+        
+        filename = f"gen_n{current_vertices:04d}.tsp"
         filepath = os.path.join(args.dir, filename)
         
-        matrix = generate_metric_tsp_matrix(args.vertices, args.size)
-        save_to_file(matrix, filepath)
+        matrix = generate_metric_tsp_matrix(current_vertices, args.size)
         
+        if not verify_triangle_inequality(matrix):
+            print(f"Skipping {filename} due to triangle inequality violation.")
+            continue
+
+        save_to_file(matrix, filepath)
         print(f"Saved instance: {filepath}")
         
     print("File generation completed.")
