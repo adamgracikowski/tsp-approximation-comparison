@@ -18,7 +18,7 @@ def analyze_relative_error(csv_path, output_dir):
         print("Error: Missing columns FileName, Algorithm or TotalDistance.")
         return
 
-    pattern = r'o(\d+)\.tsp'
+    pattern = r'o(\d+)\.txt'
     opt_costs = df['FileName'].str.extract(pattern, expand=False)
     
     if opt_costs.isnull().any():

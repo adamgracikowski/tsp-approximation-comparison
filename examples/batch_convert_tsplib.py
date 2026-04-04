@@ -70,7 +70,7 @@ def convert_single_file(input_path, optimal_cost, output_dir):
                     if matrix[i][j] > matrix[i][k] + matrix[k][j]:
                         matrix[i][j] = matrix[i][k] + matrix[k][j]
 
-    output_filename = f"n{dimension}o{optimal_cost}.tsp"
+    output_filename = f"n{dimension}o{optimal_cost}.txt"
     output_path = os.path.join(output_dir, output_filename)
     original_filename = os.path.basename(input_path)
 
@@ -84,7 +84,7 @@ def convert_single_file(input_path, optimal_cost, output_dir):
 
 def main():
     parser = argparse.ArgumentParser(description="Batch converter for TSPLIB to custom format with optimal costs.")
-    parser.add_argument("-i", "--input", type=str, required=True, help="Directory containing original .tsp files.")
+    parser.add_argument("-i", "--input", type=str, required=True, help="Directory containing original .txt files.")
     parser.add_argument("-opt", "--optimal-file", type=str, required=True, help="Text file with optimal values mapping.")
     parser.add_argument("-o", "--output", type=str, default="tsplib_examples", help="Output directory for converted files.")
 
@@ -101,14 +101,14 @@ def main():
         print(f"Error loading optimal values file: {e}")
         return
 
-    search_pattern = os.path.join(args.input, "*.tsp")
+    search_pattern = os.path.join(args.input, "*.txt")
     tsp_files = glob.glob(search_pattern)
 
     if not tsp_files:
-        print(f"No .tsp files found in '{args.input}'.")
+        print(f"No .txt files found in '{args.input}'.")
         return
 
-    print(f"Found {len(tsp_files)} .tsp files to process. Starting conversion...\n")
+    print(f"Found {len(tsp_files)} .txt files to process. Starting conversion...\n")
     
     success_count = 0
     skip_count = 0

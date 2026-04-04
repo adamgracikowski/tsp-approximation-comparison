@@ -44,7 +44,7 @@ internal class Program
                 return;
             }
 
-            var files = Directory.GetFiles(options.Directory, "*.tsp", SearchOption.TopDirectoryOnly);
+            var files = Directory.GetFiles(options.Directory, "*.txt", SearchOption.TopDirectoryOnly);
 
             var now = DateTime.Now;
             var defaultFileName = $"result_{now:yyyy-MM-dd_HH-mm-ss}.csv";

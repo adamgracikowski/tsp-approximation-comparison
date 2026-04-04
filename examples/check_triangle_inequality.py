@@ -32,8 +32,8 @@ def check_triangle_inequality(dimension, matrix):
     return True, None
 
 def main():
-    parser = argparse.ArgumentParser(description="Checks if .tsp files satisfy the triangle inequality.")
-    parser.add_argument("-d", "--dir", type=str, default=".", help="Directory to scan for .tsp files (default: current directory).")
+    parser = argparse.ArgumentParser(description="Checks if .txt files satisfy the triangle inequality.")
+    parser.add_argument("-d", "--dir", type=str, default=".", help="Directory to scan for .txt files (default: current directory).")
     
     args = parser.parse_args()
 
@@ -41,14 +41,14 @@ def main():
         print(f"Error: Directory '{args.dir}' does not exist.")
         return
 
-    search_pattern = os.path.join(args.dir, "*.tsp")
+    search_pattern = os.path.join(args.dir, "*.txt")
     tsp_files = glob.glob(search_pattern)
 
     if not tsp_files:
-        print(f"No .tsp files found in directory: {args.dir}")
+        print(f"No .txt files found in directory: {args.dir}")
         return
 
-    print(f"Found {len(tsp_files)} .tsp file(s). Starting verification...\n")
+    print(f"Found {len(tsp_files)} .txt file(s). Starting verification...\n")
 
     passed_count = 0
     failed_count = 0

@@ -18,7 +18,7 @@ def plot_tsp_approximation_ratio(csv_filepath, limit, output_dir):
             print(f"Error: Column '{col}' is missing in the CSV file.")
             return
 
-    pattern = r'o(\d+)\.tsp'
+    pattern = r'o(\d+)\.txt'
     opt_costs_raw = df['FileName'].str.extract(pattern, expand=False)
     
     if opt_costs_raw.isnull().any():
