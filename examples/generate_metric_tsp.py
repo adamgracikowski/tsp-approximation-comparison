@@ -61,7 +61,7 @@ def main():
     for i in range(args.count):
         current_vertices = args.start + i * args.step
         
-        filename = f"gen_n{current_vertices:04d}.tsp"
+        filename = f"gen_n{current_vertices:04d}.txt"
         filepath = os.path.join(args.dir, filename)
         
         matrix = generate_metric_tsp_matrix(current_vertices, args.size)

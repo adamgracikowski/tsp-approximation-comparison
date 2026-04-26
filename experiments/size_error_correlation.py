@@ -19,7 +19,7 @@ def analyze_advanced_metrics(csv_path, output_dir):
         print("Error: Missing required columns in the CSV file.")
         return
 
-    pattern = r'o(\d+)\.tsp'
+    pattern = r'o(\d+)\.txt'
     opt_costs = df['FileName'].str.extract(pattern, expand=False)
     
     if opt_costs.isnull().any():

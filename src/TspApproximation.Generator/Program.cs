@@ -26,7 +26,7 @@ public class Program
         {
             int currentVertices = opts.Start + i * opts.Step;
 
-            string filename = $"gen_n{currentVertices:D4}.tsp";
+            string filename = $"gen_n{currentVertices:D4}.txt";
             string filepath = Path.Combine(opts.Dir, filename);
 
             int[,] matrix = GenerateMetricTspMatrix(currentVertices, opts.Size);

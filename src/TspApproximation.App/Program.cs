@@ -47,6 +47,12 @@ internal class Program
                 Console.WriteLine("Result saved successfully.");
             }
         }
+        catch (NotImplementedException ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine(ex.Message);
+            Console.ResetColor();
+        }
         catch (Exception ex)
         {
             Console.ForegroundColor = ConsoleColor.Red;
