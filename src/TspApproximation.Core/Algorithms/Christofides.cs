@@ -4,7 +4,6 @@ public sealed class Christofides : IAlgorithm
 {
     public TspOutput Solve(TspInput input)
     {
-        // replace with actual implementation of Christofides algorithm
-        return new TspOutput([0, 1, 2, 3, 0], 4);
+        throw new NotImplementedException("Christofides algorithm is not implemented yet.");
     }
 }
