@@ -1,47 +1,29 @@
 using FluentAssertions;
 
-using TspApproximation.Core;
 using TspApproximation.Core.Algorithms;
 using TspApproximation.Core.IO;
 
 namespace TspApproximation.Tests;
 
-public class ChristofidesApproximationTests
+public sealed class ChristofidesApproximationTests
 {
     private static readonly string TsplibPath = FindTsplibDirectory();
 
-    // All tsplib instances with n <= 200 — large enough to exercise blossoms, fast enough for CI.
-    public static IEnumerable<object[]> Instances =>
-    [
-        ["n51o426.tsp", 426],
-        ["n52o7542.tsp", 7542],
-        ["n70o675.tsp", 675],
-        ["n76o108159.tsp", 108159],
-        ["n76o538.tsp", 538],
-        ["n99o1211.tsp", 1211],
-        ["n100o7910.tsp", 7910],
-        ["n100o20749.tsp", 20749],
-        ["n100o21282.tsp", 21282],
-        ["n100o21294.tsp", 21294],
-        ["n100o22068.tsp", 22068],
-        ["n100o22141.tsp", 22141],
-        ["n101o629.tsp", 629],
-        ["n105o14379.tsp", 14379],
-        ["n107o44303.tsp", 44303],
-        ["n124o59030.tsp", 59030],
-        ["n130o6110.tsp", 6110],
-        ["n136o96772.tsp", 96772],
-        ["n144o58537.tsp", 58537],
-        ["n150o6528.tsp", 6528],
-        ["n150o26130.tsp", 26130],
-        ["n150o26524.tsp", 26524],
-        ["n152o73682.tsp", 73682],
-        ["n159o42080.tsp", 42080],
-        ["n195o2323.tsp", 2323],
-        ["n198o15780.tsp", 15780],
-        ["n200o29368.tsp", 29368],
-        ["n200o29437.tsp", 29437],
-    ];
+    public static TheoryData<string, int> Instances
+    {
+        get
+        {
+            var data = new TheoryData<string, int>();
+            foreach (var path in Directory.EnumerateFiles(TsplibPath, "n*.txt").OrderBy(p => p))
+            {
+                var name = Path.GetFileNameWithoutExtension(path);
+                var opt = int.Parse(name[(name.IndexOf('o') + 1)..]);
+                data.Add(Path.GetFileName(path), opt);
+            }
+
+            return data;
+        }
+    }
 
     [Theory]
     [MemberData(nameof(Instances))]
@@ -54,7 +36,7 @@ public class ChristofidesApproximationTests
 
         result.TotalDistance.Should().BeLessThanOrEqualTo(
             (int)Math.Ceiling(1.5 * opt),
-            because: $"{fileName}: expected at most 1.5×{opt}={1.5 * opt:F0}, got {result.TotalDistance}");
+            because: $"{fileName}: expected at most 1.5x{opt}={1.5 * opt:F0}, got {result.TotalDistance}");
     }
 
     [Theory]
@@ -94,10 +76,13 @@ public class ChristofidesApproximationTests
             because: "reported distance must equal the sum of edge weights along the route");
     }
 
+    private const string ExamplesDirectoryName = "examples";
+    private const string TsplibExamplesSubdirectoryName = "tsplib";
+
     private static string FindTsplibDirectory()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir != null && !Directory.Exists(Path.Combine(dir.FullName, "examples")))
+        while (dir != null && !Directory.Exists(Path.Combine(dir.FullName, ExamplesDirectoryName)))
         {
             dir = dir.Parent;
         }
@@ -105,9 +90,9 @@ public class ChristofidesApproximationTests
         if (dir == null)
         {
             throw new DirectoryNotFoundException(
-                "Could not locate the 'examples' directory by walking up from the test binary.");
+                $"Could not locate the '{ExamplesDirectoryName}' directory by walking up from the test binary.");
         }
 
-        return Path.Combine(dir.FullName, "examples", "tsplib");
+        return Path.Combine(dir.FullName, ExamplesDirectoryName, TsplibExamplesSubdirectoryName);
     }
 }
