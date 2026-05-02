@@ -12,17 +12,6 @@ public sealed class Christofides : IAlgorithm
 
         // Step 2: find odd-degree vertices in the MST
         var degree = new int[n];
-        foreach (var edge in mst.Edges)
-        {
-            if (edge.U < edge.V) // each edge appears twice in mst.Edges
-            {
-                degree[edge.U]++;
-            }
-            // Actually MST edges are stored as both directions, let's count differently
-        }
-
-        // Recount using adjacency list
-        Array.Clear(degree, 0, n);
         for (int v = 0; v < n; v++)
         {
             degree[v] = mst.AdjacencyList[v].Count;
@@ -101,13 +90,8 @@ public sealed class Christofides : IAlgorithm
         int totalDistance = 0;
         int prev = -1;
 
-        foreach (int v in eulerCircuit)
+        foreach (var v in eulerCircuit.Where(v => !visited[v]))
         {
-            if (visited[v])
-            {
-                continue;
-            }
-
             visited[v] = true;
             route.Add(v);
             if (prev != -1)
