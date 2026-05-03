@@ -5,7 +5,7 @@ namespace TspApproximation.Core;
 /// Satellites are assumed to be unique non-negative integers (vertex or edge indices).
 /// Supports O(log n) insert, delete-min, and key change via direct satellite lookup.
 /// </summary>
-public class BinaryHeap
+public sealed class BinaryHeap
 {
     /// <summary>
     /// key[s] is the priority of satellite s.
@@ -29,7 +29,7 @@ public class BinaryHeap
 
     public BinaryHeap()
     {
-        _satellite = [0]; // position 0 unused; heap is 1-based
+        _satellite = [0]; // position 0 unused
         _key = new List<double>();
         _pos = new List<int>();
         _size = 0;
@@ -78,16 +78,9 @@ public class BinaryHeap
             _satellite.Add(0);
         }
 
-        int i;
-        for (i = _size; i / 2 > 0 && _key[_satellite[i / 2]] > k; i /= 2)
-        {
-            _satellite[i] = _satellite[i / 2];
-            _pos[_satellite[i]] = i;
-        }
-
-        _satellite[i] = s;
-        _pos[s] = i;
         _key[s] = k;
+        Place(s, _size);
+        BubbleUp(s);
     }
 
     /// <summary>
@@ -101,31 +94,15 @@ public class BinaryHeap
         }
 
         int min = _satellite[1];
-        int slast = _satellite[_size--];
-
-        int child;
-        int i;
-        for (i = 1, child = 2; child <= _size; i = child, child *= 2)
-        {
-            if (child < _size && _key[_satellite[child]] > _key[_satellite[child + 1]])
-            {
-                child++;
-            }
-
-            if (_key[slast] > _key[_satellite[child]])
-            {
-                _satellite[i] = _satellite[child];
-                _pos[_satellite[child]] = i;
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        _satellite[i] = slast;
-        _pos[slast] = i;
+        int slast = _satellite[_size];
+        _size--;
         _pos[min] = -1;
+
+        if (_size > 0)
+        {
+            Place(slast, 1);
+            BubbleDown(slast);
+        }
 
         return min;
     }
@@ -144,16 +121,76 @@ public class BinaryHeap
     /// </summary>
     public void Remove(int s)
     {
-        int i;
-        for (i = _pos[s]; i / 2 > 0; i /= 2)
+        int i = _pos[s];
+        int slast = _satellite[_size--];
+        _pos[s] = -1;
+
+        if (slast == s)
         {
-            _satellite[i] = _satellite[i / 2];
-            _pos[_satellite[i]] = i;
+            return;
         }
 
-        _satellite[1] = s;
-        _pos[s] = 1;
+        Place(slast, i);
+        BubbleUp(slast);
+        BubbleDown(slast);
+    }
 
-        DeleteMin();
+    /// <summary>
+    /// Places satellite s at heap position i, updating _satellite and _pos.
+    /// </summary>
+    private void Place(int s, int i)
+    {
+        _satellite[i] = s;
+        _pos[s] = i;
+    }
+
+    /// <summary>
+    /// Restores the min-heap property by moving the satellite s upward in the heap if its key is smaller than the key of its parent.
+    /// </summary>
+    /// <param name="s">The satellite to be moved upward in the heap.</param>
+    private void BubbleUp(int s)
+    {
+        int i = _pos[s];
+        while (i / 2 > 0 && _key[_satellite[i / 2]] > _key[s])
+        {
+            Place(_satellite[i / 2], i);
+            i /= 2;
+        }
+
+        Place(s, i);
+    }
+
+    /// <summary>
+    /// Restores the min-heap invariant by moving the satellite down the heap if its key is greater than its children's keys.
+    /// </summary>
+    /// <param name="s">The satellite to be moved down the heap.</param>
+    private void BubbleDown(int s)
+    {
+        int i = _pos[s];
+        while (true)
+        {
+            int child = i * 2;
+            if (child > _size)
+            {
+                break;
+            }
+
+            if (child < _size && _key[_satellite[child]] > _key[_satellite[child + 1]])
+            {
+                child++;
+            }
+
+            if (_key[s] > _key[_satellite[child]])
+            {
+                Place(_satellite[child], i);
+                i = child;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        Place(s, i);
     }
 }
