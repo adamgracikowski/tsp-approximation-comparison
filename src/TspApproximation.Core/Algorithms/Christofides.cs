@@ -42,11 +42,11 @@ public sealed class Christofides : IAlgorithm
             costs.Add(graph[origVertices[lu], origVertices[lv]]);
         }
 
-        var (matchedEdges, _) = matching.SolveMinimumCostPerfectMatching(costs);
+        var mcpm = matching.SolveMinimumCostPerfectMatching(costs);
 
         // Translate matched edges back to original vertex indices
         var matchingOriginal = new List<(int, int)>();
-        foreach (int e in matchedEdges)
+        foreach (int e in mcpm.EdgeIndices)
         {
             var (lu, lv) = subGraph.GetEdge(e);
             matchingOriginal.Add((origVertices[lu], origVertices[lv]));

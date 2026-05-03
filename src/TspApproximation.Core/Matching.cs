@@ -1,9 +1,18 @@
 namespace TspApproximation.Core;
 
+/// <summary>
+/// Represents the label assigned to a vertex during the breadth-first search (BFS)
+/// in the context of an alternating forest used in graph matching algorithms.
+/// </summary>
 internal enum VertexLabel
 {
+    /// <summary>The vertex has not yet been visited or labeled during the current BFS phase. </summary>
     Unlabeled = 0,
+
+    /// <summary>The vertex is at an odd distance from the root of its alternating tree in the forest. </summary>
     Odd = 1,
+
+    /// <summary>The vertex is at an even distance from the root of its alternating tree in the forest. </summary>
     Even = 2,
 }
 
@@ -61,9 +70,9 @@ public sealed class Matching
     private readonly List<bool> _active;
 
     /// <summary>
-    /// Available indices (n..2n-1) that can be assigned to new blossoms.
+    /// Available indices (n...2n-1) that can be assigned to new blossoms.
     /// </summary>
-    private List<int> _free = [];
+    private readonly List<int> _free = [];
 
     //
     // Alternating Forest Variables
@@ -85,9 +94,9 @@ public sealed class Matching
     private readonly List<int> _root;
 
     /// <summary>
-    /// BFS queue of EVEN vertices whose neighbours have not yet been explored.
+    /// BFS queue of EVEN vertices whose neighbors have not yet been explored.
     /// </summary>
-    private readonly LinkedList<int> _forestList = new();
+    private readonly LinkedList<int> _forestList = [];
 
     /// <summary>
     /// Ensures each vertex is processed at most once per Grow() step.
@@ -145,10 +154,10 @@ public sealed class Matching
         _visited = new bool[2 * _n];
     }
 
-    public void Grow()
+    private void Grow()
     {
         Reset();
-
+        
         while (_forestList.Count > 0)
         {
             int w = _outer[_forestList.First!.Value];
@@ -213,12 +222,18 @@ public sealed class Matching
             }
         }
 
+        CheckPerfectMatching();
+    }
+
+    private void CheckPerfectMatching()
+    {
         _perfect = true;
         for (int i = 0; i < _n; i++)
         {
             if (_mate[_outer[i]] == -1)
             {
                 _perfect = false;
+                return;
             }
         }
     }
@@ -229,7 +244,7 @@ public sealed class Matching
 
     private bool IsEdgeBlocked(int e) => _slack[e] > 0;
 
-    public void Heuristic()
+    private void Heuristic()
     {
         var degree = new int[_n];
         var b = new BinaryHeap();
@@ -279,6 +294,13 @@ public sealed class Matching
         }
     }
 
+    /// <summary>
+    /// Destroys the specified blossom, releasing all vertices it contains and restoring their
+    /// original outer representation. Updates the state of the blossom to inactive, unblocks it if needed,
+    /// and marks it as free for reuse.
+    /// </summary>
+    /// <param name="t">The index of the blossom to be destroyed. If the index corresponds to a standard vertex
+    /// or the blossom remains blocked due to its positive dual value, no action is performed.</param>
     private void DestroyBlossom(int t)
     {
         if ((t < _n) || (_blocked[t] && _dual[t] > 0))
@@ -303,6 +325,16 @@ public sealed class Matching
         _mate[t] = -1;
     }
 
+    /// <summary>
+    /// Expands an inactive blossom, restoring its original components as individual vertices
+    /// and pairing the vertices of the odd cycle. This operation updates the matching structure
+    /// and prepares the blossom for reuse. Optionally, blocked blossoms can also be expanded
+    /// based on the provided parameter.
+    /// </summary>
+    /// <param name="u">The index of the blossom to be expanded. If the blossom is a standard vertex
+    /// or remains blocked and <paramref name="expandBlocked"/> is false, no action is performed.</param>
+    /// <param name="expandBlocked">Indicates whether blocked blossoms should be expanded.
+    /// Defaults to false, meaning blocked blossoms retain their state unless explicitly expanded.</param>
     private void Expand(int u, bool expandBlocked = false)
     {
         int v = _outer[_mate[u]];
@@ -424,6 +456,12 @@ public sealed class Matching
         }
     }
 
+    /// <summary>
+    /// Resets the internal state of the matching algorithm to prepare for a new search iteration.
+    /// Clears the forest structure, marks all vertices as unvisited, resets tree roots,
+    /// and destroys any active blossoms that are no longer part of the current search.
+    /// Initializes the forest with unmatched vertices for further exploration.
+    /// </summary>
     private void Reset()
     {
         for (int i = 0; i < 2 * _n; i++)
@@ -670,7 +708,23 @@ public sealed class Matching
         }
     }
 
-    public (List<int>, double) SolveMinimumCostPerfectMatching(List<double> cost)
+    public struct MinimumCostPerfectMatchingResult
+    {
+        public List<int> EdgeIndices;
+        public double Cost;
+    }
+
+    /// <summary>
+    /// Calculates the minimum cost perfect matching for a graph given a list of edge costs.
+    /// </summary>
+    /// <param name="cost">
+    /// A list of edge costs associated with the graph. 
+    /// </param>
+    /// <returns>
+    /// A struct containing the indices of the edges in the resulting minimum cost perfect matching
+    /// and the associated total cost.
+    /// </returns>
+    public MinimumCostPerfectMatchingResult SolveMinimumCostPerfectMatching(List<double> cost)
     {
         SolveMaximumMatching();
         if (!_perfect)
@@ -696,13 +750,8 @@ public sealed class Matching
         }
 
         var matching = RetrieveMatching();
-        double obj = 0;
-        foreach (int it in matching)
-        {
-            obj += cost[it];
-        }
-
-        return (matching, obj);
+        double obj = matching.Sum(it => cost[it]);
+        return new MinimumCostPerfectMatchingResult { EdgeIndices = matching, Cost = obj };
     }
 
     private void PositiveCosts()
@@ -722,6 +771,12 @@ public sealed class Matching
         }
     }
 
+    /// <summary>
+    /// Computes the maximum matching for the graph associated with this instance. 
+    /// </summary>
+    /// <returns>
+    /// A list of edge indices of the maximum matching in the graph.
+    /// </returns>
     public List<int> SolveMaximumMatching()
     {
         Clear();
@@ -758,6 +813,14 @@ public sealed class Matching
         }
     }
 
+    /// <summary>
+    /// Retrieves the current matching as a list of edge indices. Each edge in the resulting list corresponds
+    /// to a pair of matched vertices in the graph. Only active blossoms and their contained vertices are considered
+    /// during the matching retrieval process.
+    /// </summary>
+    /// <returns>
+    /// A list of integers representing the edge indices of the matching in the graph.
+    /// </returns>
     private List<int> RetrieveMatching()
     {
         var matching = new List<int>();
