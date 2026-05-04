@@ -12,12 +12,12 @@ public sealed class Christofides : IAlgorithm
         var n = graph.VertexCount;
 
         var mst = graph.Mst();
-        List<int> oddVertices = FindOddDegreeVertices(n, mst);
-        Graph subGraph = CreateCompleteSubGraph(oddVertices, graph);
-        List<(int, int)> matchingOriginal = GenerateMatchingFromSubGraph(subGraph, graph, oddVertices);
-        List<List<int>> adjMulti = CreateAdjacencyListFromMstAndMatching(n, mst, matchingOriginal);
+        var oddVertices = FindOddDegreeVertices(n, mst);
+        var subGraph = CreateCompleteSubGraph(oddVertices, graph);
+        var matchingOriginal = GenerateMatchingFromSubGraph(subGraph, graph, oddVertices);
+        var adjMulti = CreateAdjacencyListFromMstAndMatching(n, mst, matchingOriginal);
         var eulerCircuit = FindEulerCircuit(adjMulti, n);
-        (List<int> route, int totalDistance) = BuildRouteFromEulerCircuit(eulerCircuit, graph);
+        var (route, totalDistance) = BuildRouteFromEulerCircuit(eulerCircuit, graph);
         return new TspOutput(route, totalDistance);
     }
 
@@ -34,9 +34,9 @@ public sealed class Christofides : IAlgorithm
         var matching = new Matching(subGraph);
 
         // Build cost list for the subgraph edges
-        int edgeCount = subGraph.EdgeCount;
+        var edgeCount = subGraph.EdgeCount;
         var costs = new List<double>(edgeCount);
-        for (int e = 0; e < edgeCount; e++)
+        for (var e = 0; e < edgeCount; e++)
         {
             var (lu, lv) = subGraph.GetEdge(e);
             costs.Add(graph[origVertices[lu], origVertices[lv]]);
@@ -46,7 +46,7 @@ public sealed class Christofides : IAlgorithm
 
         // Translate matched edges back to original vertex indices
         var matchingOriginal = new List<(int, int)>();
-        foreach (int e in mcpm.EdgeIndices)
+        foreach (var e in mcpm.EdgeIndices)
         {
             var (lu, lv) = subGraph.GetEdge(e);
             matchingOriginal.Add((origVertices[lu], origVertices[lv]));
@@ -69,7 +69,7 @@ public sealed class Christofides : IAlgorithm
         List<(int, int)> matching)
     {
         var adjMulti = new List<List<int>>(n);
-        for (int i = 0; i < n; i++)
+        for (var i = 0; i < n; i++)
         {
             adjMulti.Add([]);
         }
@@ -98,11 +98,11 @@ public sealed class Christofides : IAlgorithm
     /// <note>O(k^2) complexity, where k = |subVertices| &le; n (fills the k&#10799;k adjacency matrix and precomputes edge indices).</note>
     private static Graph CreateCompleteSubGraph(List<int> subVertices, Graph graph)
     {
-        int k = subVertices.Count;
+        var k = subVertices.Count;
         var subMatrix = new int[k, k];
-        for (int i = 0; i < k; i++)
+        for (var i = 0; i < k; i++)
         {
-            for (int j = 0; j < k; j++)
+            for (var j = 0; j < k; j++)
             {
                 subMatrix[i, j] = (i != j) ? graph[subVertices[i], subVertices[j]] : 0;
             }
@@ -122,7 +122,7 @@ public sealed class Christofides : IAlgorithm
     private static List<int> FindOddDegreeVertices(int n, MstResult mst)
     {
         var oddVertices = new List<int>();
-        for (int v = 0; v < n; v++)
+        for (var v = 0; v < n; v++)
         {
             if (mst.AdjacencyList[v].Count % 2 == 1)
             {
@@ -144,11 +144,16 @@ public sealed class Christofides : IAlgorithm
     {
         var visited = new bool[graph.VertexCount];
         var route = new List<int>();
-        int totalDistance = 0;
-        int prev = -1;
+        var totalDistance = 0;
+        var prev = -1;
 
-        foreach (var v in eulerCircuit.Where(v => !visited[v]))
+        foreach (var v in eulerCircuit)
         {
+            if (visited[v])
+            {
+                continue;
+            }
+
             visited[v] = true;
             route.Add(v);
             if (prev != -1)
@@ -178,7 +183,7 @@ public sealed class Christofides : IAlgorithm
     private static List<int> FindEulerCircuit(List<List<int>> adj, int n)
     {
         var adjLinks = new LinkedList<int>[n];
-        for (int i = 0; i < n; i++)
+        for (var i = 0; i < n; i++)
         {
             adjLinks[i] = new LinkedList<int>(adj[i]);
         }
@@ -189,10 +194,10 @@ public sealed class Christofides : IAlgorithm
 
         while (stack.Count > 0)
         {
-            int u = stack.Peek();
+            var u = stack.Peek();
             if (adjLinks[u].Count > 0)
             {
-                int v = adjLinks[u].First!.Value;
+                var v = adjLinks[u].First!.Value;
                 adjLinks[u].RemoveFirst();
                 adjLinks[v].Remove(u); // Remove the reverse edge
                 stack.Push(v);

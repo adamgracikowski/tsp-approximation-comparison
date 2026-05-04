@@ -180,15 +180,13 @@ public sealed class BinaryHeap
                 child++;
             }
 
-            if (_key[s] > _key[_satellite[child]])
-            {
-                Place(_satellite[child], i);
-                i = child;
-            }
-            else
+            if (_key[s] <= _key[_satellite[child]])
             {
                 break;
             }
+
+            Place(_satellite[child], i);
+            i = child;
         }
 
         Place(s, i);
