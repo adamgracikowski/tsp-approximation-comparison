@@ -191,35 +191,35 @@ public sealed class Matching
 
     private void AddFreeBlossomIndex(int i) => _free.Add(i);
 
+    /// <summary>
+    /// Augments the current matching along the path connecting the roots of two alternating trees,
+    /// using the edge (u, v) as the bridge between them.
+    /// </summary>
+    /// <param name="u">A vertex in one alternating tree, endpoint of the bridging edge.</param>
+    /// <param name="v">A vertex in the other alternating tree, endpoint of the bridging edge.</param>
     private void Augment(int u, int v)
     {
         int p = _outer[u];
         int q = _outer[v];
-        int outv = q;
-
-        int fp = _forest[p];
         _matchedWith[p] = q;
         _matchedWith[q] = p;
         Expand(p);
         Expand(q);
+        AugmentPath(p);
+        AugmentPath(q);
+    }
 
+    /// <summary>
+    /// Walks up one arm of the augmenting path from <paramref name="start"/> to its tree root,
+    /// reversing the matching along the way.
+    /// </summary>
+    private void AugmentPath(int start)
+    {
+        int p = start;
+        int fp = _forest[p];
         while (fp != -1)
         {
-            q = _outer[_forest[p]];
-            p = _outer[_forest[q]];
-            fp = _forest[p];
-
-            _matchedWith[p] = q;
-            _matchedWith[q] = p;
-            Expand(p);
-            Expand(q);
-        }
-
-        p = outv;
-        fp = _forest[p];
-        while (fp != -1)
-        {
-            q = _outer[_forest[p]];
+            int q = _outer[_forest[p]];
             p = _outer[_forest[q]];
             fp = _forest[p];
             _matchedWith[p] = q;
