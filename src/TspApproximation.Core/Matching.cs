@@ -248,7 +248,7 @@ public sealed class Matching
 
         _tip[t] = tip;
 
-        List<int> circuit = new();
+        List<int> circuit = [];
         pathWalker = _outer[u];
         circuit.Insert(0, pathWalker);
         while (pathWalker != _tip[t])
@@ -690,7 +690,7 @@ public sealed class Matching
     /// </returns>
     private List<int> RetrieveMatching()
     {
-        List<int> matching = new();
+        List<int> matching = [];
         for (int i = 0; i < 2 * N; i++)
         {
             if (_active[i] && _matchedWith[i] != -1 && _outer[i] == i)
