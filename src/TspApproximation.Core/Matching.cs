@@ -305,6 +305,10 @@ public sealed class Matching
         return true;
     }
 
+    /// <summary>
+    /// Resets the internal state of the matching algorithm, clearing all data structures
+    /// and reinitializing them to their default values.
+    /// </summary>
     private void Clear()
     {
         ClearBlossomIndices();
@@ -334,6 +338,11 @@ public sealed class Matching
         }
     }
 
+    /// <summary>
+    /// Resets and reinitializes the indices available for assigning new blossoms.
+    /// Clears the list of free blossom indices and repopulates it with indices
+    /// representing potential new blossoms in the graph.
+    /// </summary>
     private void ClearBlossomIndices()
     {
         _free.Clear();
@@ -380,8 +389,9 @@ public sealed class Matching
     /// and prepares the blossom for reuse. Optionally, blocked blossoms can also be expanded
     /// based on the provided parameter.
     /// </summary>
-    /// <param name="u">The index of the blossom to be expanded. If the blossom is a standard vertex
-    /// or remains blocked and <paramref name="expandBlocked"/> is false, no action is performed.</param>
+    /// <param name="u">The index of the blossom to be expanded. If it is a standard vertex (u &lt; n),
+    /// no action is performed. For blossom indices, no action is performed if the blossom is blocked
+    /// and <paramref name="expandBlocked"/> is false.</param>
     /// <param name="expandBlocked">Indicates whether blocked blossoms should be expanded.
     /// Defaults to false, meaning blocked blossoms retain their state unless explicitly expanded.</param>
     private void Expand(int u, bool expandBlocked = false)
@@ -661,9 +671,8 @@ public sealed class Matching
     }
 
     /// <summary>
-    /// Retrieves the current matching as a list of edge indices. Each edge in the resulting list corresponds
-    /// to a pair of matched vertices in the graph. Only active blossoms and their contained vertices are considered
-    /// during the matching retrieval process.
+    /// Retrieves the current matching as a list of edge indices. Expands all remaining active blossoms
+    /// to restore their internal vertices, then collects every edge whose endpoints are mutually matched.
     /// </summary>
     /// <returns>
     /// A list of integers representing the edge indices of the matching in the graph.
