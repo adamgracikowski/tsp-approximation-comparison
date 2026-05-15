@@ -561,7 +561,7 @@ public sealed class Matching
     private void Heuristic()
     {
         var degree = new int[N];
-        var b = new BinaryHeap();
+        var b = new PriorityQueue<int, int>();
 
         for (int i = 0; i < M; i++)
         {
@@ -577,12 +577,12 @@ public sealed class Matching
 
         for (int i = 0; i < N; i++)
         {
-            b.Insert(degree[i], i);
+            b.Enqueue(i, degree[i]);
         }
 
-        while (b.Size() > 0)
+        while (b.Count > 0)
         {
-            int u = b.DeleteMin();
+            int u = b.Dequeue();
             if (_matchedWith[_outer[u]] == -1)
             {
                 int min = -1;
