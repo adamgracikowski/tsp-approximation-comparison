@@ -5,93 +5,91 @@ namespace TspApproximation.Core;
 public sealed class Matching
 {
     /// <summary>
-    /// True when a blossom index is currently in use (shrunk and not yet expanded).
+    ///     True when a blossom index is currently in use (shrunk and not yet expanded).
     /// </summary>
     private readonly List<bool> _active;
 
     /// <summary>
-    /// For each blossom B, whether it is blocked from expansion. 
-    /// A blocked blossom cannot be expanded because its dual value is still positive.
+    ///     For each blossom B, whether it is blocked from expansion.
+    ///     A blocked blossom cannot be expanded because its dual value is still positive.
     /// </summary>
-    /// <note>Indexed by blossom id, i.e., indexes n...2*n-1.
-    /// The first n ones (corresponding to normal vertices) are not used. </note>
+    /// <note>
+    ///     Indexed by blossom id, i.e., indexes n...2*n-1.
+    ///     The first n ones (corresponding to normal vertices) are not used.
+    /// </note>
     private readonly List<bool> _blocked;
 
     /// <summary>
-    /// For each blossom B, every original graph vertex residing anywhere inside it.
+    ///     For each blossom B, every original graph vertex residing anywhere inside it.
     /// </summary>
     private readonly List<List<int>> _deep;
 
-    //
-    // Weighted Matching (Dual) Variables
-    //
-
     /// <summary>
-    /// Dual variable (price) for each vertex and blossom.
+    ///     Dual variable (price) for each vertex and blossom.
     /// </summary>
     private readonly List<double> _dual;
 
     /// <summary>
-    /// Stores the parent of each vertex in the alternating forest during BFS exploration.
-    /// forest[v] = u indicates that vertex v was reached from vertex u (u is the parent of v).
+    ///     Stores the parent of each vertex in the alternating forest during BFS exploration.
+    ///     forest[v] = u indicates that vertex v was reached from vertex u (u is the parent of v).
     /// </summary>
     private readonly List<int> _forest;
 
     /// <summary>
-    /// BFS queue of EVEN vertices whose neighbors have not yet been explored.
+    ///     BFS queue of EVEN vertices whose neighbors have not yet been explored.
     /// </summary>
     private readonly LinkedList<int> _forestQueue = [];
 
     /// <summary>
-    /// Available indices (n...2n-1) that can be assigned to new blossoms.
+    ///     Available indices (n...2n-1) that can be assigned to new blossoms.
     /// </summary>
     private readonly List<int> _free = [];
 
     private readonly Graph _g;
 
     /// <summary>
-    /// mate[u] stores the index of the vertex matched to u, or -1 if unmatched.
+    ///     mate[u] stores the index of the vertex matched to u, or -1 if unmatched.
     /// </summary>
     private readonly List<int> _matchedWith;
 
     /// <summary>
-    /// Maps any vertex or sub-blossom to the highest-level blossom currently containing it.
-    /// outer[i] == i when the vertex is not inside any blossom.
+    ///     Maps any vertex or sub-blossom to the highest-level blossom currently containing it.
+    ///     outer[i] == i when the vertex is not inside any blossom.
     /// </summary>
     private readonly List<int> _outer;
 
     /// <summary>
-    /// Stores the unmatched root vertex at the base of the current alternating tree.
+    ///     Stores the unmatched root vertex at the base of the current alternating tree.
     /// </summary>
     private readonly List<int> _root;
 
     /// <summary>
-    /// For each blossom B, the immediate nodes (vertices or smaller blossoms) that form its odd cycle.
+    ///     For each blossom B, the immediate nodes (vertices or smaller blossoms) that form its odd cycle.
     /// </summary>
     private readonly List<List<int>> _shallow;
 
     /// <summary>
-    /// Reduced cost of each edge. An edge can only enter the matching when its slack == 0.
+    ///     Reduced cost of each edge. An edge can only enter the matching when its slack == 0.
     /// </summary>
     private readonly List<double> _slack;
 
     /// <summary>
-    /// The base vertex of the blossom i.e., the one connected to the rest of the alternating tree.
+    ///     The base vertex of the blossom i.e., the one connected to the rest of the alternating tree.
     /// </summary>
     private readonly List<int> _tip;
 
     /// <summary>
-    /// Label assigned during BFS.
+    ///     Label assigned during BFS.
     /// </summary>
     private readonly List<VertexLabel> _vertexLabel;
 
     /// <summary>
-    /// Ensures each vertex is processed at most once per Grow() step.
+    ///     Ensures each vertex is processed at most once per Grow() step.
     /// </summary>
     private readonly List<bool> _visited;
 
     /// <summary>
-    /// Whether the current matching is perfect.
+    ///     Whether the current matching is perfect.
     /// </summary>
     private bool _perfect;
 
@@ -121,26 +119,20 @@ public sealed class Matching
     }
 
     /// <summary>
-    /// Number of edges of the graph.
+    ///     Number of edges of the graph.
     /// </summary>
-    private int M
-    {
-        get => _g.EdgeCount;
-    }
+    private int M => _g.EdgeCount;
 
     /// <summary>
-    /// Number of vertices of the graph.
+    ///     Number of vertices of the graph.
     /// </summary>
-    private int N
-    {
-        get => _g.VertexCount;
-    }
+    private int N => _g.VertexCount;
 
     /// <summary>
-    /// Computes the maximum matching for the graph associated with this instance. 
+    ///     Computes the maximum matching for the graph associated with this instance.
     /// </summary>
     /// <returns>
-    /// A list of edge indices of the maximum matching in the graph.
+    ///     A list of edge indices of the maximum matching in the graph.
     /// </returns>
     public List<int> SolveMaximumMatching()
     {
@@ -150,14 +142,14 @@ public sealed class Matching
     }
 
     /// <summary>
-    /// Calculates the minimum cost perfect matching for a graph given a list of edge costs.
+    ///     Calculates the minimum cost perfect matching for a graph given a list of edge costs.
     /// </summary>
     /// <param name="cost">
-    /// A list of edge costs associated with the graph. 
+    ///     A list of edge costs associated with the graph.
     /// </param>
     /// <returns>
-    /// A struct containing the indices of the edges in the resulting minimum cost perfect matching
-    /// and the associated total cost.
+    ///     A struct containing the indices of the edges in the resulting minimum cost perfect matching
+    ///     and the associated total cost.
     /// </returns>
     public MinimumCostPerfectMatchingResult SolveMinimumCostPerfectMatching(List<double> cost)
     {
@@ -184,16 +176,19 @@ public sealed class Matching
             Reset();
         }
 
-        var matching = RetrieveMatching();
+        List<int> matching = RetrieveMatching();
         double obj = matching.Sum(it => cost[it]);
         return new MinimumCostPerfectMatchingResult { EdgeIndices = matching, Cost = obj };
     }
 
-    private void AddFreeBlossomIndex(int i) => _free.Add(i);
+    private void AddFreeBlossomIndex(int i)
+    {
+        _free.Add(i);
+    }
 
     /// <summary>
-    /// Augments the current matching along the path connecting the roots of two alternating trees,
-    /// using the edge (u, v) as the bridge between them.
+    ///     Augments the current matching along the path connecting the roots of two alternating trees,
+    ///     using the edge (u, v) as the bridge between them.
     /// </summary>
     /// <param name="u">A vertex in one alternating tree, endpoint of the bridging edge.</param>
     /// <param name="v">A vertex in the other alternating tree, endpoint of the bridging edge.</param>
@@ -210,8 +205,8 @@ public sealed class Matching
     }
 
     /// <summary>
-    /// Walks up one arm of the augmenting path from <paramref name="start"/> to its tree root,
-    /// reversing the matching along the way.
+    ///     Walks up one arm of the augmenting path from <paramref name="start" /> to its tree root,
+    ///     reversing the matching along the way.
     /// </summary>
     private void AugmentPath(int start)
     {
@@ -230,13 +225,13 @@ public sealed class Matching
     }
 
     /// <summary>
-    /// Contracts the blossom w, ..., u, v, ..., w, where w is the LCA of u and v in the alternating forest.
-    /// Both passed vertices are EVEN.
+    ///     Contracts the blossom w, ..., u, v, ..., w, where w is the LCA of u and v in the alternating forest.
+    ///     Both passed vertices are EVEN.
     /// </summary>
     private int Blossom(int u, int v)
     {
         int t = GetFreeBlossomIndex();
-        var isInPath = new bool[2 * N];
+        bool[] isInPath = new bool[2 * N];
 
         int pathWalker = u;
         while (pathWalker != -1)
@@ -253,7 +248,7 @@ public sealed class Matching
 
         _tip[t] = tip;
 
-        var circuit = new List<int>();
+        List<int> circuit = new();
         pathWalker = _outer[u];
         circuit.Insert(0, pathWalker);
         while (pathWalker != _tip[t])
@@ -302,12 +297,13 @@ public sealed class Matching
                 return false;
             }
         }
+
         return true;
     }
 
     /// <summary>
-    /// Resets the internal state of the matching algorithm, clearing all data structures
-    /// and reinitializing them to their default values.
+    ///     Resets the internal state of the matching algorithm, clearing all data structures
+    ///     and reinitializing them to their default values.
     /// </summary>
     private void Clear()
     {
@@ -339,9 +335,9 @@ public sealed class Matching
     }
 
     /// <summary>
-    /// Resets and reinitializes the indices available for assigning new blossoms.
-    /// Clears the list of free blossom indices and repopulates it with indices
-    /// representing potential new blossoms in the graph.
+    ///     Resets and reinitializes the indices available for assigning new blossoms.
+    ///     Clears the list of free blossom indices and repopulates it with indices
+    ///     representing potential new blossoms in the graph.
     /// </summary>
     private void ClearBlossomIndices()
     {
@@ -353,15 +349,17 @@ public sealed class Matching
     }
 
     /// <summary>
-    /// Destroys the specified blossom, releasing all vertices it contains and restoring their
-    /// original outer representation. Updates the state of the blossom to inactive, unblocks it if needed,
-    /// and marks it as free for reuse.
+    ///     Destroys the specified blossom, releasing all vertices it contains and restoring their
+    ///     original outer representation. Updates the state of the blossom to inactive, unblocks it if needed,
+    ///     and marks it as free for reuse.
     /// </summary>
-    /// <param name="t">The index of the blossom to be destroyed. If the index corresponds to a standard vertex
-    /// or the blossom remains blocked due to its positive dual value, no action is performed.</param>
+    /// <param name="t">
+    ///     The index of the blossom to be destroyed. If the index corresponds to a standard vertex
+    ///     or the blossom remains blocked due to its positive dual value, no action is performed.
+    /// </param>
     private void DestroyBlossom(int t)
     {
-        if ((t < N) || (_blocked[t] && _dual[t] > 0))
+        if (t < N || (_blocked[t] && _dual[t] > 0))
         {
             return;
         }
@@ -384,16 +382,20 @@ public sealed class Matching
     }
 
     /// <summary>
-    /// Expands an inactive blossom, restoring its original components as individual vertices
-    /// and pairing the vertices of the odd cycle. This operation updates the matching structure
-    /// and prepares the blossom for reuse. Optionally, blocked blossoms can also be expanded
-    /// based on the provided parameter.
+    ///     Expands an inactive blossom, restoring its original components as individual vertices
+    ///     and pairing the vertices of the odd cycle. This operation updates the matching structure
+    ///     and prepares the blossom for reuse. Optionally, blocked blossoms can also be expanded
+    ///     based on the provided parameter.
     /// </summary>
-    /// <param name="u">The index of the blossom to be expanded. If it is a standard vertex (u &lt; n),
-    /// no action is performed. For blossom indices, no action is performed if the blossom is blocked
-    /// and <paramref name="expandBlocked"/> is false.</param>
-    /// <param name="expandBlocked">Indicates whether blocked blossoms should be expanded.
-    /// Defaults to false, meaning blocked blossoms retain their state unless explicitly expanded.</param>
+    /// <param name="u">
+    ///     The index of the blossom to be expanded. If it is a standard vertex (u &lt; n),
+    ///     no action is performed. For blossom indices, no action is performed if the blossom is blocked
+    ///     and <paramref name="expandBlocked" /> is false.
+    /// </param>
+    /// <param name="expandBlocked">
+    ///     Indicates whether blocked blossoms should be expanded.
+    ///     Defaults to false, meaning blocked blossoms retain their state unless explicitly expanded.
+    /// </param>
     private void Expand(int u, bool expandBlocked = false)
     {
         int v = _outer[_matchedWith[u]];
@@ -423,11 +425,11 @@ public sealed class Matching
 
         // Rotate shallow[u] so that the element containing p comes first
         bool found = false;
-        var shallowUList = new LinkedList<int>(_shallow[u]);
-        var currentNode = shallowUList.First;
+        LinkedList<int> shallowUList = new(_shallow[u]);
+        LinkedListNode<int>? currentNode = shallowUList.First;
         while (currentNode != null && !found)
         {
-            foreach (var jt in _deep[currentNode.Value])
+            foreach (int jt in _deep[currentNode.Value])
             {
                 if (jt == p)
                 {
@@ -436,7 +438,7 @@ public sealed class Matching
                 }
             }
 
-            var nextNode = currentNode.Next;
+            LinkedListNode<int>? nextNode = currentNode.Next;
             if (!found)
             {
                 shallowUList.Remove(currentNode);
@@ -451,7 +453,7 @@ public sealed class Matching
         // Pair the vertices of the odd cycle:
         // shallow[0] is the tip — its mate was already set above.
         // The remaining elements form pairs: (1,2), (3,4), ...
-        var shallow = _shallow[u];
+        List<int> shallow = _shallow[u];
         _matchedWith[shallow[0]] = _matchedWith[u];
         for (int i = 1; i + 1 < shallow.Count; i += 2)
         {
@@ -487,7 +489,7 @@ public sealed class Matching
     private void Grow()
     {
         Reset();
-        
+
         while (_forestQueue.Count > 0)
         {
             int w = _outer[_forestQueue.First!.Value];
@@ -517,7 +519,7 @@ public sealed class Matching
                         _forest[_outer[v]] = u;
                         _vertexLabel[_outer[v]] = VertexLabel.Odd;
                         _root[_outer[v]] = _root[_outer[u]];
-                        
+
                         // update the outer vm vertex i.e., the v's matched partner
                         _forest[_outer[vm]] = v;
                         _vertexLabel[_outer[vm]] = VertexLabel.Even;
@@ -560,8 +562,8 @@ public sealed class Matching
 
     private void Heuristic()
     {
-        var degree = new int[N];
-        var b = new PriorityQueue<int, int>();
+        int[] degree = new int[N];
+        PriorityQueue<int, int> b = new();
 
         for (int i = 0; i < M; i++)
         {
@@ -570,7 +572,7 @@ public sealed class Matching
                 continue;
             }
 
-            var (u, v) = _g.GetEdge(i);
+            (int u, int v) = _g.GetEdge(i);
             degree[u]++;
             degree[v]++;
         }
@@ -608,11 +610,20 @@ public sealed class Matching
         }
     }
 
-    private bool IsAdjacent(int u, int v) => _g[u, v] != 0 && !IsEdgeBlocked(u, v);
+    private bool IsAdjacent(int u, int v)
+    {
+        return _g[u, v] != 0 && !IsEdgeBlocked(u, v);
+    }
 
-    private bool IsEdgeBlocked(int u, int v) => _slack[_g.GetEdgeIndex(u, v)] > 0;
+    private bool IsEdgeBlocked(int u, int v)
+    {
+        return _slack[_g.GetEdgeIndex(u, v)] > 0;
+    }
 
-    private bool IsEdgeBlocked(int e) => _slack[e] > 0;
+    private bool IsEdgeBlocked(int e)
+    {
+        return _slack[e] > 0;
+    }
 
     private void PositiveCosts()
     {
@@ -632,10 +643,10 @@ public sealed class Matching
     }
 
     /// <summary>
-    /// Resets the internal state of the matching algorithm to prepare for a new search iteration.
-    /// Clears the forest structure, marks all vertices as unvisited, resets tree roots,
-    /// and destroys any active blossoms that are no longer part of the current search.
-    /// Initializes the forest with unmatched vertices for further exploration.
+    ///     Resets the internal state of the matching algorithm to prepare for a new search iteration.
+    ///     Clears the forest structure, marks all vertices as unvisited, resets tree roots,
+    ///     and destroys any active blossoms that are no longer part of the current search.
+    ///     Initializes the forest with unmatched vertices for further exploration.
     /// </summary>
     private void Reset()
     {
@@ -648,7 +659,7 @@ public sealed class Matching
                 DestroyBlossom(i);
             }
         }
-        
+
         CollectionsMarshal.AsSpan(_visited)[..(2 * N)].Clear();
         _forestQueue.Clear();
         for (int i = 0; i < N; i++)
@@ -671,15 +682,15 @@ public sealed class Matching
     }
 
     /// <summary>
-    /// Retrieves the current matching as a list of edge indices. Expands all remaining active blossoms
-    /// to restore their internal vertices, then collects every edge whose endpoints are mutually matched.
+    ///     Retrieves the current matching as a list of edge indices. Expands all remaining active blossoms
+    ///     to restore their internal vertices, then collects every edge whose endpoints are mutually matched.
     /// </summary>
     /// <returns>
-    /// A list of integers representing the edge indices of the matching in the graph.
+    ///     A list of integers representing the edge indices of the matching in the graph.
     /// </returns>
     private List<int> RetrieveMatching()
     {
-        var matching = new List<int>();
+        List<int> matching = new();
         for (int i = 0; i < 2 * N; i++)
         {
             if (_active[i] && _matchedWith[i] != -1 && _outer[i] == i)
@@ -690,7 +701,7 @@ public sealed class Matching
 
         for (int i = 0; i < M; i++)
         {
-            var (u, v) = _g.GetEdge(i);
+            (int u, int v) = _g.GetEdge(i);
             if (_matchedWith[u] == v)
             {
                 matching.Add(i);
@@ -702,30 +713,27 @@ public sealed class Matching
 
     private void UpdateDualCosts()
     {
-        double e1 = 0, e2 = 0, e3 = 0;
-        bool inite1 = false, inite2 = false, inite3 = false;
+        double? e1 = null, e2 = null, e3 = null;
 
         for (int i = 0; i < M; i++)
         {
-            var (u, v) = _g.GetEdge(i);
+            (int u, int v) = _g.GetEdge(i);
 
             if ((_vertexLabel[_outer[u]] == VertexLabel.Even && _vertexLabel[_outer[v]] == VertexLabel.Unlabeled) ||
                 (_vertexLabel[_outer[v]] == VertexLabel.Even && _vertexLabel[_outer[u]] == VertexLabel.Unlabeled))
             {
-                if (!inite1 || e1 > _slack[i])
+                if (e1 == null || e1 > _slack[i])
                 {
                     e1 = _slack[i];
-                    inite1 = true;
                 }
             }
             else if (_outer[u] != _outer[v] &&
                 _vertexLabel[_outer[u]] == VertexLabel.Even &&
                 _vertexLabel[_outer[v]] == VertexLabel.Even)
             {
-                if (!inite2 || e2 > _slack[i])
+                if (e2 == null || e2 > _slack[i])
                 {
                     e2 = _slack[i];
-                    inite2 = true;
                 }
             }
         }
@@ -733,36 +741,29 @@ public sealed class Matching
         for (int i = N; i < 2 * N; i++)
         {
             if (_active[i] && i == _outer[i] && _vertexLabel[_outer[i]] == VertexLabel.Odd &&
-                (!inite3 || e3 > _dual[i]))
+                (e3 == null || e3 > _dual[i]))
             {
                 e3 = _dual[i];
-                inite3 = true;
             }
         }
 
-        double e = 0;
-        if (inite1)
+        double? eNullable = e1 ?? e2 ?? e3;
+        if (eNullable == null)
         {
-            e = e1;
-        }
-        else if (inite2)
-        {
-            e = e2;
-        }
-        else if (inite3)
-        {
-            e = e3;
+            return;
         }
 
-        if (e > e2 / 2.0 && inite2)
+        if (e2.HasValue)
         {
-            e = e2 / 2.0;
+            eNullable = Math.Min(eNullable.Value, e2.Value / 2.0);
         }
 
-        if (e > e3 && inite3)
+        if (e3.HasValue)
         {
-            e = e3;
+            eNullable = Math.Min(eNullable.Value, e3.Value);
         }
+
+        double e = eNullable.Value;
 
         for (int i = 0; i < 2 * N; i++)
         {
@@ -771,41 +772,53 @@ public sealed class Matching
                 continue;
             }
 
-            if (_active[i] && _vertexLabel[_outer[i]] == VertexLabel.Even)
+            switch (_active[i])
             {
-                _dual[i] += e;
-            }
-            else if (_active[i] && _vertexLabel[_outer[i]] == VertexLabel.Odd)
-            {
-                _dual[i] -= e;
+                case true when _vertexLabel[_outer[i]] == VertexLabel.Even:
+                    _dual[i] += e;
+                    break;
+                case true when _vertexLabel[_outer[i]] == VertexLabel.Odd:
+                    _dual[i] -= e;
+                    break;
             }
         }
 
         for (int i = 0; i < M; i++)
         {
-            var (u, v) = _g.GetEdge(i);
+            (int u, int v) = _g.GetEdge(i);
             if (_outer[u] == _outer[v])
             {
                 continue;
             }
 
-            if (_vertexLabel[_outer[u]] == VertexLabel.Even && _vertexLabel[_outer[v]] == VertexLabel.Even)
+            switch (_vertexLabel[_outer[u]])
             {
-                _slack[i] -= 2.0 * e;
-            }
-            else if (_vertexLabel[_outer[u]] == VertexLabel.Odd && _vertexLabel[_outer[v]] == VertexLabel.Odd)
-            {
-                _slack[i] += 2.0 * e;
-            }
-            else if ((_vertexLabel[_outer[v]] == VertexLabel.Unlabeled && _vertexLabel[_outer[u]] == VertexLabel.Even) ||
-                (_vertexLabel[_outer[u]] == VertexLabel.Unlabeled && _vertexLabel[_outer[v]] == VertexLabel.Even))
-            {
-                _slack[i] -= e;
-            }
-            else if ((_vertexLabel[_outer[v]] == VertexLabel.Unlabeled && _vertexLabel[_outer[u]] == VertexLabel.Odd) ||
-                (_vertexLabel[_outer[u]] == VertexLabel.Unlabeled && _vertexLabel[_outer[v]] == VertexLabel.Odd))
-            {
-                _slack[i] += e;
+                case VertexLabel.Even when _vertexLabel[_outer[v]] == VertexLabel.Even:
+                    _slack[i] -= 2.0 * e;
+                    break;
+                case VertexLabel.Odd when _vertexLabel[_outer[v]] == VertexLabel.Odd:
+                    _slack[i] += 2.0 * e;
+                    break;
+                case VertexLabel.Unlabeled:
+                default:
+                    {
+                        if ((_vertexLabel[_outer[v]] == VertexLabel.Unlabeled &&
+                                _vertexLabel[_outer[u]] == VertexLabel.Even) ||
+                            (_vertexLabel[_outer[u]] == VertexLabel.Unlabeled &&
+                                _vertexLabel[_outer[v]] == VertexLabel.Even))
+                        {
+                            _slack[i] -= e;
+                        }
+                        else if ((_vertexLabel[_outer[v]] == VertexLabel.Unlabeled &&
+                                _vertexLabel[_outer[u]] == VertexLabel.Odd) ||
+                            (_vertexLabel[_outer[u]] == VertexLabel.Unlabeled &&
+                                _vertexLabel[_outer[v]] == VertexLabel.Odd))
+                        {
+                            _slack[i] += e;
+                        }
+
+                        break;
+                    }
             }
         }
 
@@ -838,8 +851,8 @@ public sealed class Matching
 }
 
 /// <summary>
-/// Represents the label assigned to a vertex during the breadth-first search (BFS)
-/// in the context of an alternating forest used in graph matching algorithms.
+///     Represents the label assigned to a vertex during the breadth-first search (BFS)
+///     in the context of an alternating forest used in graph matching algorithms.
 /// </summary>
 internal enum VertexLabel
 {
@@ -850,6 +863,5 @@ internal enum VertexLabel
     Odd = 1,
 
     /// <summary>The vertex is at an even distance from the root of its alternating tree in the forest. </summary>
-    Even = 2,
+    Even = 2
 }
-
