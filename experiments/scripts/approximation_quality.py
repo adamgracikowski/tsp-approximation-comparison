@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import argparse
 import os
 
-def plot_tsp_approximation_ratio(csv_filepath, limit, output_dir):
+def plot_tsp_approximation_ratio(csv_filepath, limits, output_dir):
     os.makedirs(output_dir, exist_ok=True)
 
     try:
@@ -55,14 +55,29 @@ def plot_tsp_approximation_ratio(csv_filepath, limit, output_dir):
             zorder=2
         )
 
-    plt.axhline(
-        y=limit, 
-        color='r', 
-        linestyle='--', 
-        linewidth=2, 
-        alpha=0.8,
-        zorder=1
-    )
+    max_x = df['VertexCount'].max()
+
+    for limit in limits:
+        plt.axhline(
+            y=limit, 
+            color='r', 
+            linestyle='--', 
+            linewidth=2, 
+            alpha=0.8,
+            zorder=1
+        )
+        
+        plt.text(
+            x=max_x, 
+            y=limit - 0.06, 
+            s=f"{limit}",
+            color='red', 
+            fontsize=10, 
+            fontweight='bold',
+            horizontalalignment='right',
+            verticalalignment='bottom',
+            zorder=4
+        )
 
     plt.xlabel('Liczba wierzchołków', fontsize=12)
     plt.ylabel('Współczynnik aproksymacji', fontsize=12)
@@ -77,8 +92,9 @@ def plot_tsp_approximation_ratio(csv_filepath, limit, output_dir):
 
 def main():
     parser = argparse.ArgumentParser(description="Approximation Quality plotter for TSP algorithms based on CSV results.")
-    parser.add_argument("-i", "--input", type=str, required=True, help="Path to the input CSV file containing TSP results.")
-    parser.add_argument("-l", "--limit", type=float, default=2.0, help="Height of the horizontal limit line (default: 2.0)")
+    parser.add_argument("-i", "--input", type=str, required=True, help="Path to the input CSV file containing TSP results.")    
+    parser.add_argument("-l", "--limits", nargs='+', type=float, default=[2.0, 1.5], 
+                        help="Space-separated horizontal limit lines (default: 2.0 1.5)")
     parser.add_argument("--out", type=str, default="plots", help="Directory to save the generated plot (default: 'plots').")
     
     args = parser.parse_args()
@@ -87,7 +103,7 @@ def main():
         print(f"Error: File '{args.input}' does not exist.")
         return
 
-    plot_tsp_approximation_ratio(args.input, args.limit, args.out)
+    plot_tsp_approximation_ratio(args.input, args.limits, args.out)
 
 if __name__ == "__main__":
     main()
