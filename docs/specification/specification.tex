@@ -1,0 +1,648 @@
+\documentclass{article}
+%----------------------------------------------------------------------
+\usepackage[polish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[a4paper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage[colorlinks=true, allcolors=black]{hyperref}
+\usepackage{blindtext}
+\usepackage{nomencl}
+\usepackage{amsfonts}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{etoolbox}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{subcaption}
+\usepackage{tikz}
+\usetikzlibrary{graphs, graphs.standard,decorations.pathreplacing, positioning, calc}
+%----------------------------------------------------------------------
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\usepackage{csquotes}
+\usepackage[backend=biber, style=numeric]{biblatex}
+\addbibresource{refs.bib}
+
+% ----------------------------------------------------
+\theoremstyle{definition}
+\newtheorem{definition}{Definicja}[section]
+\newtheorem{example}[definition]{Przykład}
+
+\theoremstyle{plain}
+\newtheorem{properties}[definition]{Własności}
+\newtheorem{theorem}[definition]{Twierdzenie}
+\newtheorem{conclusion}[definition]{Wniosek}
+\newtheorem{lemma}[definition]{Lemat}
+
+\theoremstyle{remark}
+\newtheorem*{remark}{Uwaga}
+% ----------------------------------------------------
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace{1.5cm}
+    \includegraphics[width=0.9\textwidth]{WMiNI_logo.png} \\
+    \vspace{1cm}
+    {\fontsize{30}{20}\selectfont \textbf{Algorytmy zaawansowane} \par}
+    \vspace{1.5cm}
+    {\fontsize{25}{20}\selectfont \textbf{Komiwojażer}\par}
+    \vspace{1cm}
+    {\fontsize{20}{20}\selectfont Porównanie dwóch algorytmów aproksymacyjnych znajdujących rozwiązanie problemu Komiwojażera \par}
+    \vspace{2cm}
+    {\fontsize{18}{20}\selectfont Dokumentacja wstępna\par}
+    \vspace{1cm}
+    {\fontsize{12}{20}\selectfont Zespół: \\ inż. Marcin Cieszyński \\ inż. Radosław Głasek \\ inż. Adam Grącikowski \par}
+    \vspace{1cm}
+    {\fontsize{12}{20}\selectfont Prowadzący: \\ dr Michał Tuczyński \par}
+    
+    \vfill
+    Oświadczamy, że niniejsza praca, stanowiąca podstawę do uznania osiągnięcia efektów uczenia się z przedmiotu \textit{Algorytmy zaawansowane}, została wykonana samodzielnie. 
+
+    \vspace{1cm}
+    
+    Warszawa, \today
+    
+\end{titlepage}
+
+%----------------------------------------------------------------------
+\tableofcontents
+\newpage
+
+%----------------------------------------------------------------------
+\section{Wstęp}
+
+Problem komiwojażera (ang. \textit{Traveling Salesperson Problem}, TSP) to jeden z klasycznych problemów optymalizacji kombinatorycznej, należący do klasy problemów NP-trudnych.
+
+\subsection{Cel projektu}
+
+Przedmiotem projektu jest implementacja oraz szczegółowe porównanie dwóch algorytmów aproksymacyjnych rozwiązujących metryczną wersję problemu komiwojażera. Porównanie ma na celu ewaluację obu podejść pod kątem jakości zwracanych rozwiązań w stosunku do czasu ich wykonania na instancjach testowych o zróżnicowanej wielkości.
+
+\subsection{Przedstawienie problemu}
+
+Zadanie komiwojażera polega na znalezieniu najkrótszej możliwej trasy, która zaczyna się w wybranym punkcie, odwiedza dokładnie jeden raz każdy z pozostałych punktów, a następnie wraca do miejsca startu.
+
+W ujęciu grafowym problem ten modeluje się za pomocą pełnego grafu nieskierowanego ważonego $G = (V, E)$, gdzie $V$ to zbiór wierzchołków reprezentujących lokalizacje, a $E$ to zbiór krawędzi łączących każdą parę wierzchołków. Każdej krawędzi przypisana jest waga za pomocą funkcji kosztu $c: E \to \mathbb{N}$. Zastosowanie dziedziny liczb naturalnych oznacza, że operujemy na całkowitoliczbowych, nieujemnych wartościach odległości. Naszym celem jest znalezienie cyklu Hamiltona $C$ o minimalnym sumarycznym koszcie krawędzi.
+
+Wersja metryczna problemu, którą rozpatrujemy w tym projekcie, nakłada na funkcję kosztu dodatkowe ograniczenia, upodabniające graf do rzeczywistej przestrzeni fizycznej. Najważniejszym z nich jest \textbf{nierówność trójkąta}. Oznacza ona, że bezpośrednia podróż z wierzchołka $u$ do $w$ nigdy nie jest droższa niż podróż przez jakikolwiek wierzchołek pośredni $v$. Formalnie dla każdych trzech wierzchołków $u, v, w \in V$ zachodzi:
+
+$$c(u, w) \le c(u, v) + c(v, w)$$
+
+\noindent
+Dodatkowo zakładamy symetrię, czyli $c(u, v) = c(v, u)$.
+
+\newpage
+	\section{Opis rozwiązań problemu}
+	Do porównania wybrano dwa algorytmy: 2-aproksymacyjny\cite{cormen2012} oraz Christofidesa\cite{Christofides2022}.
+	\subsection{Algorytm 2-aproksymacyjny}
+	Algorytm 2-aproksymacyjny opiera się na znalezieniu minimalnego drzewa rozpinającego (MST), i za jego pomocą wyznaczenie cyklu Hamiltona. Niech $G = (V, E)$ będzie grafem pełnym o nieujemnych wagach krawędzi, a funkcja kosztu $c$ spełnia nierówność trójkąta.
+	
+	\begin{algorithm}
+		\caption{Algorytm 2-aproksymacyjny(G, c)}
+		\label{alg:tsp_2approx}
+		\begin{algorithmic}[1]
+			\State $r \gets \text{wybierz dowolny wierzchołek z } G.V$
+			\State $T \gets \text{MST(G, c, r)}$ \Comment{minimalne drzewo rozpinające}
+			\State $L \gets \text{lista wierzchołków w porządku preorder drzewa } T$
+			\State \textbf{return} cykl $H$, który odwiedza wierzchołki zgodnie z listą $L$
+		\end{algorithmic}
+	\end{algorithm}
+	
+	\subsubsection{Analiza jakości aproksymacji}
+	Niech $H^*$ będzie optymalnym cyklem Hamiltona w grafie $G$. Poprzez usunięcie jednej krawędzi z $H^*$, otrzymamy drzewo rozpinające, zatem koszt minimalnego drzewa rozpinającego $T$ stanowi ograniczenie dolne kosztu rozwiązania optymalnego:
+	\begin{equation}
+		c(T) \leq c(H^*)
+		\label{eq:tsp_2approx_min}
+	\end{equation}
+	
+	Definiujemy pełny spacer $W$ jako ciąg wierzchołków powstały przez obejście drzewa $T$ ,,dookoła'' (odwiedzając krawędzie w obu kierunkach). W takim spacerze każda krawędź drzewa $T$ występuje dokładnie dwukrotnie, zatem:
+	\begin{equation}
+		c(W) = 2c(T)
+	\end{equation}
+	Z nierówności \ref{eq:tsp_2approx_min} wynika, że taki spacer jest maksymalnie 2 razy dłuższy niż rozwiązanie optymalne:
+	\begin{equation}
+		c(W) \leq 2c(H^*)
+	\end{equation}
+	Spacer $W$ nie jest cyklem Hamiltona, natomiast korzystając z tego, że $G$ grafem pełnym, możemy stworzyć cykl $H$ odwiedzając każdy wierzchołek (oprócz początkowego) tylko raz - odwiedzamy wierzchołki w kolejności ich pierwszego pojawienia się w spacerze $W$. Wiemy, że każde takie skrócenie spaceru nie może nam wydłużyć jego długości, ponieważ $c$ spełnia nierówności trójkąta:
+	\begin{equation}
+		c(H) \leq c(W)
+	\end{equation} 
+
+    \noindent
+	W ostateczności otrzymujemy cykl o koszcie:
+	\begin{equation}
+		c(H) \leq 2c(H^*)
+	\end{equation} 
+    Co oznacza, że tak wyznaczony cykl $H$ będzie nie dłuższy niż dwukrotność długości rozwiązania optymalnego.
+    
+	\subsubsection{Analiza złożoności czasowej}
+	Do wyznaczenia minimalnego drzewa rozpinającego skorzystano z algorytmu Prima. Złożoność tego algorytmu bez zastosowania kopców Fibonacciego to: $O(|E|\log|V|)$. 
+	Wyznaczenie porządku wstępnego (ang. \textit{preorder}) w drzewie to: $O(|V|)$. W grafie pełnym $|E| = O(|V|^2)$, a więc łączna złożoność czasowa algorytmu wynosi:
+    \begin{equation}
+	    O(|V|^2\log|V|)
+    \end{equation}
+
+\subsection{Algorytm Christofidesa}
+Drugim z zastosowanych algorytmów jest algorytm przedstawiony przez Christofidesa \cite{Christofides2022} (alg. \ref{alg:christofides}). Umożliwia on znalezienie cyklu Hamiltona o koszcie nie większym niż $\frac{3}{2}\mathrm{OPT}$. 
+
+\begin{algorithm}[H]
+    \caption{Algorytm Christofidesa}
+    \label{alg:christofides}
+    \begin{algorithmic}[1]
+        \State $T^* \gets$ minimalne drzewo rozpinające grafu $G$        \State $O \gets \emptyset$ \Comment{zbiór wierzchołków o nieparzystym stopniu}
+        \For{każdy wierzchołek $v \in V$}
+            \If{$d_v(T^*)$ jest nieparzyste}
+                \State $O \gets O \cup \{v\}$
+            \EndIf
+        \EndFor
+        \State $M_O^* \gets$ skojarzenie doskonałe o najmniejszym koszcie w podgrafie $\langle O \rangle$
+        \State $G^e \gets (V,\, E_{T^*} \cup E_{M_O^*})$ \Comment{spójny multigraf o wszystkich stopniach parzystych}
+        \State $\Phi^e \gets$ cykl Eulera w $G^e$
+        \State $V \gets \emptyset$ \Comment{zbiór wierzchołków już odwiedzonych}
+        \State $\Phi_H \gets$ pusta ścieżka
+        \For{każdy wierzchołek $v$ w kolejności wyznaczonej przez $\Phi^e$}
+            \If{$v \notin V$}
+                \State dołącz $v$ do $\Phi_H$
+                \State $V \gets V \cup \{v\}$
+            \EndIf
+        \EndFor
+        \State zamknij $\Phi_H$ krawędzią z ostatniego do pierwszego wierzchołka
+    \end{algorithmic}
+\end{algorithm}
+\subsubsection{Analiza jakości aproksymacji}
+
+Przypomnijmy najpierw lemat o uściskach dłoni:
+\begin{lemma} \label{lamma:shakingHands}
+    Suma stopni wierzchołków grafu jest równa dwukrotności liczby jego krawędzi. 
+    \begin{equation*}
+        \displaystyle\sum_{v\in V}\deg(v) = 2|E|
+    \end{equation*}
+\end{lemma}
+
+Rozważmy problem komiwojażera dla grafu pełnego $G = (V, E)$, $|V| = n$. Niech macierz kosztów $[c_{ij}]$ spełnia nierówność trójkąta. 
+Niech $T^* = (V, E_{T^*})$ będzie drzewem rozpinającym grafu $G$ o najmniejszym koszcie  $c(T^*)$. Niech $V^O(T^*)$ będzie zbiorem wierzchołków $G$ o nieparzystym stopniu w drzewie $T^*$:
+\[
+  V^O(T^*) = \{v_i: 2 \nmid d_i(T^*)\}
+\]
+($d_i(T^*)$ jest stopniem wierzchołka $v_i\in V$ w $T^*$). Z lematu o uściskach dłoni \ref{lamma:shakingHands} (zastosowanego do $T^*$) liczba elementów tego zbioru: $|V^O(T^*)|
+$ jest zawsze parzysta. 
+
+Rozważmy teraz podgraf $\langle V^O(T^*)\rangle$ indukowany przez zbiór $V^O(T^*)$ wierzchołków. Z parzystej mocy zbioru $V^O(T^*)$ wynika, że zawsze istnieje skojarzenie doskonałe w grafie $V^O(T^*)$, tj. takie skojarzenie, które zawsze zawiera $1/2|V^O(T^*)|$ krawędzi. Niech $M_O^* = \left(V^O(T^*), E_{M_O^*}\right)$ będzie skojarzeniem doskonałym $\langle V^O(T^*)\rangle$ o najmniejszym koszcie $c(M_O^*)$. 
+
+\begin{theorem} \label{theorem:christofides}
+    Cykl Hamiltona $\Phi_H$ grafu $G$ może być znaleziony z kosztem $c(\Phi_H) \leq c(T^*) + c(M_O^*) < \frac{3}{2}c(\Phi^*)$ gdzie $c(\Phi^*)$ jest kosztem optymalnego cyklu Hamiltona $\Phi^*$. 
+\end{theorem}
+
+\begin{lemma} \label{lemma:christofides}
+    Dla problemu komiwojażera grafu $G$ o $n$ wierzchołkach i parzystym $n$ zachodzi $c(M^*) \leq \frac{1}{2}c(\Phi^*)$, gdzie $M^*$ jest skojarzeniem doskonałym grafu $G$ o najmniejszym koszcie i $\Phi^*$ jest optymalnym cyklem Hamiltona. 
+\end{lemma}
+
+\begin{proof}
+Rozważmy $\Phi^* = (v_{i_1}, v_{i_2}, \cdots, v_{i_n})$. Zaczynając z wierzchołka $v_{i_1}$ i przechodząc przez cykl $\Phi^*$, przyporządkowujmy kolejne krawędzie do dwóch zbiorów $M_1$ i $M_2$ naprzemiennie. 
+Przykładowo zaczynając od $M_1$ otrzymamy:
+\[
+  M_1 = \{(v_{i_1}, v_{i_2}), (v_{i_3}, v_{i_4}), \cdots, (v_{i_{n - 1}}, v_{i_n})\}
+\] 
+oraz 
+\[
+  M_2 = \{(v_{i_2}, v_{i_3}), (v_{i_4}, v_{i_5}), \cdots, (v_{i_{n}}, v_{i_1})\}
+\] 
+
+\noindent
+$M_1$ i $M_2$ są skojarzeniami $G$ oraz zachodzi 
+\[
+  c(M_1) + c(M_2) = c(\Phi^*)
+\]
+
+\noindent
+$M_1$ oraz $M_2$ zostały wybrane w sposób dowolny, możemy więc założyć $c(M_1) \leq c(M_2)$ bez utraty ogólności. Wówczas:
+\[
+  c(M^*) \leq c(M_1) \leq \frac{1}{2}c(\Phi^*)
+\]
+co kończy dowód lematu. \end{proof}
+
+\noindent
+Pokażemy teraz dowód twierdzenia \ref{theorem:christofides}. 
+\begin{proof}
+
+Z definicji $T^*$ dla grafu $G$ zachodzi
+\begin{equation} \label{eq:MSPEulerHamilton}
+  c(T^*) \leq c(\Phi_p^*) < c(\Phi^*)
+\end{equation}
+gdzie $c(\Phi_p^*)$ jest minimalnym kosztem ścieżki Hamiltona grafu $G$, a $\Phi_p^*$ jest ścieżką Hamiltona o minimalnym koszcie (ostatnia nierówność przechodzi w $\leq$ przy dopuszczeniu krawędzi o koszcie $0$). 
+
+Graf $G^e = (V, E_{T^*} \cup E_{M_O^*})$ jest eulerowski tj. ma wszystkie wierzchołki parzystego stopnia, ponieważ $M_O^*$ jest skojarzeniem wszystkich wierzchołków nieparzystego stopnia w $T^*$. Więc $G^e$ zawiera cykl Eulera $\Phi^e = (v_{i_1}, v_{i_2}, \cdots, v_{i_k})$, który przechodzi przez wszystkie wierzchołki $v_i^*\in V$ co najmniej raz. 
+Niech $c(\Phi^e)$ będzie kosztem $\Phi^e$ tj.
+\begin{equation} \label{eq:CostOfEulerCircuit}
+  c(\Phi^e) = c(T^*) + c(M_O^*)
+\end{equation}
+
+Jeśli $\Phi_O^*$ jest rozwiązaniem problemu komiwojażera dla problemu zdefiniowanego przez indukowany podgraf $\langle V^O(T^*)\rangle$ to z lematu \ref{lemma:christofides} mamy $c(M_O^*) \leq \frac{1}{2}c(\Phi_O^*)$. Ponadto $c(\Phi_O^*) \leq c(\Phi^*)$ otrzymujemy więc 
+\begin{equation} \label{eq:MatchingCost}
+    c(M_O^*) \leq \frac{1}{2}c(\Phi^*)
+\end{equation}
+
+\noindent
+z \ref{eq:MSPEulerHamilton}, \ref{eq:CostOfEulerCircuit} oraz \ref{eq:MatchingCost} otrzymujemy 
+\[
+  c(\Phi^e) < \frac{3}{2}c(\Phi^*)
+\]
+
+Rozważmy przejście $\Phi^e$ zaczynając z $v_{i_1}$ do momentu, gdy wierzchołek 
+$v_{i_r}$ (wcześniej odwiedzony) zostaje osiągnięty
+tj. $v_{i_r} = [v_{i_1}, \cdots, v_{i_{r - 1}}]$. Niech $v_{i_s}$ będzie pierwszym wierzchołkiem następującym po wierzchołku $v_{i_r}$ w $\Phi^e$, który nie został jeszcze odwiedzony. Rozważmy cykl $\Phi_1 = (v_{i_1}, \cdots, v_{i_{r - 1}}, v_{i_s}, \cdots, v_{i_k})$ otrzymany z $\Phi^e$ przez zastąpienie ścieżki $P_{rs} = (v_{i_{r - 1}}, v_{i_r}, \cdots, v_{i_{s - 1}}, v_{i_s})$ w tym cyklu krawędzią $(v_{i_{r - 1}}, v_{i_s})$. 
+Z nierówności trójkąta mamy: 
+\[
+  c_{i_{r-1}i_{s}} \leq \displaystyle\sum_{(v_i, v_j) \in P_{rs}}c_{ij}
+\]
+gdzie $P_{rs}$ jest także używany jako zbiór krawędzi ścieżki $P_{rs}$. Więc koszt skróconego cyklu jest nie większy: $c(\Phi^e) \geq c(\Phi_1)$. 
+
+W podobny sposób, zaczynając z przejścia $\Phi_1$, można utworzyć cykl $\Phi_2$ ze ścieżką z $\Phi_1$ zastąpioną przez krawędź i $c(\Phi_1) \geq c(\Phi_2)$. W końcu otrzymamy cykl Hamiltona grafu $G$: 
+\[
+  c(\Phi_H) \leq \cdots \leq c(\Phi_1) \leq c(\Phi^e) < \frac{3}{2}c(\Phi^*)
+\]
+\end{proof}
+
+\subsubsection{Analiza złożoności obliczeniowej}
+Algorytm składa się z trzech części: 
+    \begin{itemize}
+        \item konstrukcji minimalnego drzewa rozpinającego -- o koszcie $O(n^2\log(n))$ (alg. Prima),
+        \item znalezienia skojarzenia doskonałego o najmniejszym koszcie -- o koszcie $O(n^2 m)$. W przypadku problemu komiwojażera ($m = O(n^2)$) daje to złożoność $O(n^4)$ (możliwe jest osiągnięcie teoretycznej złożoności $O(n^3)$, ale zaimplementowany i opisany wariant pierwotno-dualny cechuje się wyższą złożonością),
+        \item znalezienia cyklu Eulera oraz jego modyfikacji -- koszt liniowy ze względu na liczbę krawędzi, zatem w szczególności o złożoności $O(n^2)$.
+    \end{itemize}
+Zatem koszt obliczeniowy algorytmu jest równy
+\begin{equation*}
+    O(n^2\log(n)) + O(n^4) + O(n^2) = O(n^4)
+\end{equation*}
+
+\subsubsection{Cykl Eulera}
+Do wyznaczenia cyklu Eulera wykorzystamy algorytm Hierholzera (alg. \ref{alg:hierholzer}), który pozwala na znalezienie ścieżki w czasie liniowym względem liczby krawędzi.
+
+\begin{algorithm}[H]
+    \caption{Algorytm Hierholzera (Wyznaczanie cyklu Eulera)}
+    \label{alg:hierholzer}
+    \begin{algorithmic}[1]
+        \State $S \gets$ pusty stos, 
+        \State $P \gets$ pusta lista \Comment{Konstruowany cykl Eulera}
+        \State Wybierz dowolny wierzchołek startowy $v \in V$
+        \State $S.push(v)$
+        \While{$S$ nie jest pusty}
+            \State $u \gets S.top()$
+            \If{$u$ posiada nieodwiedzone krawędzie incydentne}
+                \State Wybierz krawędź $(u, w)$, usuń ją z grafu $G^e$
+                \State $S.push(w)$
+            \Else
+                \State $P.add(S.pop())$
+            \EndIf
+        \EndWhile
+        \State \textbf{return} $P$ (wierzchołki cyklu $\Phi^e$ w odwrotnej kolejności)
+    \end{algorithmic}
+\end{algorithm}
+
+Algorytm Hierholzera ma złożonością czasową $O(m^*)$, gdzie $m^*$ jest sumaryczną liczbą krawędzi w drzewie $T^*$ oraz skojarzeniu $M_O^*$. W szczególności $O(m^*) = O(n^2)$. 
+
+\subsubsection{Algorytm Minimalnego Skojarzenia Doskonałego} 
+W algorytmie Christofidesa (alg. \ref{alg:christofides}) kluczowe jest wyznaczenie minimalnego skojarzenia doskonałego $M_O^*$ (\textit{MWPM} ang. \textit{Minimum Weight Perfect Matching}). Jest to realizowane przy użyciu algorytmu Edmonds'a (ang. \textit{Blossom Algorithm}) w wariancie pierwotno-dualnym. Opis bazuje na rozwiązaniu Dilsona Lucasa Pereiry \cite{Pereira2011Matching}, które implementuje algorytm przedstawiony przez Gerardsa~\cite{GERARDS1995135}.
+
+Zrozumienie działania algorytmu wymaga spojrzenia na problem przez pryzmat programowania liniowego. Problem znalezienia skojarzenia doskonałego o minimalnym koszcie można sformułować wprowadzając zmienną decyzyjną $x_e \in \{0, 1\}$, która określa, czy krawędź $e \in E$ należy do skojarzenia. Relaksacja liniowa problemu pierwotnego (ang. \textit{primal}) przyjmuje postać minimalizacji kosztu:
+
+\begin{equation}
+    \min \sum_{e \in E} c_e x_e
+\end{equation}
+
+\noindent
+przy następujących ograniczeniach: \\
+
+$$
+\begin{cases}
+    \sum_{e \in \delta(v)} x_e &= 1 \quad \forall v \in V \quad \text{(każdy wierzchołek ma dokładnie jedną parę)} \\
+    \sum_{e \in \delta(B)} x_e &\ge 1 \quad \forall B \in \mathcal{O} \quad \text{(każdy kwiat musi mieć krawędź wychodzącą)} \\
+    x_e &\ge 0 \quad \forall e \in E
+\end{cases}
+$$ \\
+
+\noindent
+gdzie $\mathcal{O}$ to rodzina wszystkich podzbiorów wierzchołków o nieparzystej mocy 
+(potencjalnych kwiatów), a $\delta(S)$ to zbiór krawędzi z dokładnie jednym końcem 
+w zbiorze $S$.
+
+Zgodnie z zasadami dualności programowania liniowego, każdemu ograniczeniu z problemu pierwotnego odpowiada zmienna w problemie dualnym (równościom odpowiadają zmienne swobodne, a nierównościom zmienne ograniczone). Przypisujemy potencjał (zmienną) $y_v \in \mathbb{R}$ równościom oraz nieujemny potencjał $z_B \ge 0$ nierównościom dla kwiatów. Problem dualny polega na maksymalizacji sumy tych potencjałów:
+
+\begin{equation}
+    \max \left( \sum_{v \in V} y_v + \sum_{B \in \mathcal{O}} z_B \right)
+\end{equation}
+
+\noindent
+przy ograniczeniu dla każdej krawędzi $e = (u, v) \in E$:
+\begin{equation} \label{eq:dual:edgeContraint}
+    y_u + y_v + \sum_{B: e \in \delta(B)} z_B \le c_e
+\end{equation}
+
+Z twierdzenia o równowadze komplementarnej (ang. \textit{complementary slackness}), dla optymalnych rozwiązań problemu pierwotnego i dualnego iloczyn wartości zmiennej decyzyjnej i odpowiadającego jej luzu z drugiego problemu musi wynosić zero. Ponieważ interesują nas krawędzie faktycznie wchodzące w skład skojarzenia (dla których zmienna pierwotna $x_e = 1 > 0$), wymusza to, aby ich dualny luz wynosił dokładnie zero. Struktury i pojęcia używane w algorytmie przedstawiono poniżej:
+
+\begin{itemize}
+    \item \textbf{Las alternujący (węgierski):} Las alternujący jest strukturą pomocniczą budowana przez algorytm w celu znalezienia ścieżki powiększającej (która pozwala zwiększyć rozmiar skojarzenia). Las składa się z drzew ukorzenionych w wierzchołkach, które nie mają jeszcze przypisanej pary. Ścieżki w takich drzewach składają się naprzemiennie z krawędzi nienależących i należących do aktualnego skojarzenia.
+    \input{augmentingPathTikz}
+
+    \item \textbf{Kwiat (ang. \textit{blossom}):} Kwiatem $B$ nazywamy cykl nieparzystej długości $2k + 1$ ($k \geq 1$) taki, że dokładnie $k$ spośród jego krawędzi należy do aktualnego skojarzenia $M$, a jeden wierzchołek cyklu, nazywany wierzchołkiem bazowym (ang. \textit{base}, \textit{tip}), jest nieskojarzony wewnątrz $B$ (tj. obie krawędzie cyklu incydentne z nim nie należą do $M$).
+
+    Łodygą (ang. \textit{stem}) kwiatu $B$ nazywamy naprzemienną ścieżkę $P$ łączącą wierzchołek bazowy $b$ kwiatu z pewnym wolnym (nieskojarzonym) wierzchołkiem $r$ grafu, w której krawędzie na przemian nie należą i należą do $M$ (zaczynając od krawędzi należącej do $M$ wychodzącej z $b$).
+
+    Kwiaty zaburzają budowę lasu alternującego i uniemożliwiają proste znalezienie ścieżki powiększającej. Algorytm rozwiązuje ten problem poprzez ich identyfikację i tymczasowe kontraktowanie do pojedynczych super-wierzchołków.
+    \input{blossomTikz}
+
+    \item \textbf{Dopuszczalność dualna i luzy}
+    Przekształcając nierówność z problemu dualnego (\ref{eq:dual:edgeContraint}), dla każdej krawędzi $(v_i, v_j) \in E$ definiuje się jej luz (ang. \textit{slack}):
+    \begin{equation}
+        slack(v_i, v_j) = c_{ij} - \left(y_i + y_j + \sum_{B: (v_i, v_j) \in \delta(B)} z_B\right) \geq 0
+    \end{equation}
+    Krawędź jest uznawana za dopuszczalną (ang. \textit{tight}) do wykorzystania w algorytmie tylko wtedy, gdy jej luz wynosi dokładnie zero ($slack = 0$). W kontekście budowanego lasu alternującego oznacza to, że jeśli wierzchołek $v_i$ należy już do pewnego drzewa w lesie (jako wierzchołek będący w parzystej odległości od korzenia), to dopuszczalna krawędź $(v_i, v_j)$ pozwala rozszerzyć to konkretne drzewo o nowy wierzchołek $v_j$ (oraz ewentualnie o jego partnera, z którym jest już skojarzony).
+\end{itemize}
+
+W przeciwieństwie do algorytmu dla grafów dwudzielnych, konieczność obsługi cykli o nieparzystej długości wymusza kontrakcję kwiatów. Prezentowana implementacja w każdej iteracji odbudowuje węgierski las naprzemienny, włączając w to detekcję cykli. Gdy budowa lasu utknie, algorytm oblicza minimalną możliwą zmianę potencjałów dualnych, co skutkuje wyzerowaniem luzu dla nowych krawędzi. Dzięki temu stają się one dopuszczalne, co pozwala na dalsze rozbudowywanie lasu alternującego.
+
+\begin{algorithm}[H]
+    \caption{Algorytm Edmonds'a (MWPM w ujęciu pierwotno-dualnym)}
+    \label{alg:edmonds_mwpm}
+    \begin{algorithmic}[1]
+    \State Zredukuj koszty: $c_e \gets c_e - \min_{e'} c_{e'}$ dla wszystkich $e \in E$
+        \State Inicjalizuj skojarzenie $M \gets \emptyset$, luzy krawędzi (jako koszty) oraz potencjały dualne
+        \While{$M$ nie jest skojarzeniem doskonałym} %(\textit{perfect} = \textbf{false})}
+            \State Wykonaj szybką heurystykę skojarzenia wierzchołków bez pary %(\textit{Heuristic})
+            \State Zbuduj las alternujący oparty na krawędziach o zerowym luzie (\textit{Grow}) \Comment{\textit{Grow} za pomocą struktury BFS potrafi odnaleźć ścieżkę powiększającą i powiększyć $M$ (\textit{Augment}) lub odnaleźć cykl nieparzysty i skontraktować go (\textit{Blossom})}
+            \State Oblicz minimalną zmianę dualną (pełne skanowanie krawędzi z luzem) 
+            \State Aktualizuj potencjały dualne, luzy i ewentualnie odblokuj kwiaty %(\textit{UpdateDualCosts})
+            \State Zresetuj strukturę lasu dla nowej iteracji %(\textit{Reset})
+        \EndWhile
+        \State \textbf{return} $M$
+    \end{algorithmic}
+\end{algorithm}
+
+\noindent
+Poszczególne kroki algorytmu \ref{alg:edmonds_mwpm} przedstawiono poniżej.
+
+\paragraph{Heurystyka początkowa}
+Aby zminimalizować liczbę kosztownych iteracji głównej pętli algorytmu, nie rozpoczyna on od pustego skojarzenia. Budowane jest możliwie największe skojarzenie startowe z wykorzystaniem zachłannej heurystyki. Iteracyjnie sprawdzane są nieskojarzone wierzchołki i dobierani im są tacy wolni sąsiedzi, których stopień w grafie jest najmniejszy. Dzięki temu szybciej tworzone są początkowe pary, a struktury algorytmu muszą obsłużyć mniejszą pulę izolowanych wierzchołków.
+
+\paragraph{Rozbudowa lasu alternującego (ang. \textit{Grow})}
+Właściwa faza poszukiwania ścieżki powiększającej opiera się na przeszukiwaniu grafu wszerz. Korzeniami lasu alternującego są wierzchołki bez przypisanej pary. Przeszukiwanie wędruje wyłącznie po krawędziach \textit{dopuszczalnych}, czyli takich, których luz dualny jest aktualnie równy zeru. W trakcie ekspansji wierzchołkom w lesie nadawane są etykiety parzystości (odległości od korzenia drzewa). W tej fazie mogą wystąpić trzy scenariusze:
+\begin{itemize}
+    \item \textbf{Rozszerzenie:} Jeśli algorytm trafi na wierzchołek wolny od etykiet, dołącza go do struktury lasu wraz z jego partnerem ze skojarzenia, nadając im odpowiednio status nieparzysty i parzysty.
+    \item \textbf{Kwiat (ang. \textit{Blossom}):} Jeśli dopuszczalna krawędź połączy dwa parzyste wierzchołki z tego samego drzewa, algorytm identyfikuje cykl nieparzysty (kwiat). Cykl ten jest natychmiast kontraktowany do pojedynczego super-wierzchołka o statusie parzystym, co pozwala pominąć problem zapętlenia na etapie wyznaczania ścieżki powiększającej.
+    \item \textbf{Ścieżka powiększająca (ang. \textit{Augment}):} Jeśli badana krawędź połączy dwa wierzchołki parzyste należące do dwóch oddzielnych drzew, oznacza to odnalezienie ścieżki powiększającej łączącej dwa pierwotnie wolne wierzchołki. Algorytm odwraca przypisania krawędzi wzdłuż odnalezionej trasy, zwiększając całkowity rozmiar skojarzenia o 1. Następnie struktura lasu jest całkowicie resetowana.
+\end{itemize}
+
+\paragraph{Aktualizacja potencjałów dualnych}
+Często zdarza się, że faza rozbudowy lasu utknie -- brakuje krawędzi dopuszczalnych, które pozwalałyby na dalszą eksplorację grafu, a skojarzenie doskonałe wciąż nie zostało osiągnięte. Wówczas algorytm ucieka się do modyfikacji problemu dualnego. Głównym celem tej operacji jest przesunięcie potencjałów tak, aby co najmniej jedna nowa krawędź uzyskała $slack = 0$, przy jednoczesnym zachowaniu warunku dopuszczalności dualnej, tj. $slack \ge 0$ dla wszystkich krawędzi.
+
+Aby to osiągnąć, wyznaczana jest maksymalna bezpieczna wartość zmiany, ozn. $\epsilon$. Jest ona ograniczona przez trzy czynniki, zapobiegające powstaniu ujemnych luzów:
+\begin{enumerate}
+    \item \textbf{Krawędzie między wierzchołkami parzystymi a nieodwiedzonymi:} Ponieważ potencjał wierzchołka parzystego wzrośnie o $\epsilon$, luz na krawędzi łączącej go z wierzchołkiem spoza lasu zmaleje o $\epsilon$. Zatem zmiana nie może przekroczyć aktualnego luzu tej krawędzi: $\epsilon \le slack(e)$.
+    \item \textbf{Krawędzie między dwoma wierzchołkami parzystymi:} Zwiększenie potencjałów obu wierzchołków na końcach takiej krawędzi o $\epsilon$ spowoduje spadek luzu aż o $2\epsilon$. Wymusza to ograniczenie: $\epsilon \le \frac{slack(e)}{2}$.
+    \item \textbf{Zablokowane kwiaty o statusie nieparzystym:} Zgodnie z modelem programowania liniowego, potencjał dualny kwiatu (zmienna $z_B$) nie może być ujemny ($z_B \ge 0$). Skoro potencjały węzłów nieparzystych będą zmniejszane, modyfikacja nie może przekroczyć ich obecnego potencjału: $\epsilon \le z_B$.
+\end{enumerate}
+
+Ostateczna wartość $\epsilon$ to absolutne minimum z powyższych ograniczeń. Po jej wyznaczeniu, algorytm aktualizuje cały układ:
+\begin{itemize}
+    \item potencjały dualne wierzchołków (i skontraktowanych kwiatów) o statusie \textbf{parzystym} rosną o $\epsilon$,
+    \item potencjały dualne węzłów o statusie \textbf{nieparzystym} maleją o $\epsilon$,
+    \item potencjały wierzchołków \textbf{nieodwiedzonych} (poza lasem) pozostają bez zmian.
+\end{itemize}
+
+Konsekwencją modyfikacji potencjałów węzłów jest matematyczna zmiana wartości luzów na krawędziach. Przykładowo, krawędzie między węzłem parzystym a nieodwiedzonym zmniejszają swój luz o $\epsilon$, a między dwoma parzystymi -- o $2\epsilon$. Analogicznie luzy krawędzi incydentnych z węzłami nieparzystymi odpowiednio rosną, co chroni je przed naruszeniem warunku $slack \ge 0$.
+
+Dzięki temu algorytm zawsze osiąga postęp: wprowadzana jest nowa krawędź dopuszczalna (co umożliwia dalszą rozbudowę lasu, skontraktowanie nowego kwiatu lub znalezienie ścieżki powiększającej) albo potencjał dualny zablokowanego kwiatu spada do zera ($z_B = 0$). W drugim przypadku kwiat traci swoje ograniczenie, zostaje odblokowany i następuje jego de-kontrakcja (rozbicie z powrotem na cykl wierzchołków), co otwiera nowe ścieżki do eksploracji.
+
+\paragraph{Złożoność obliczeniowa}
+
+Pod względem teoretycznym algorytm Edmonds'a można zaimplementować w czasie $O(n^3)$ stosując złożone struktury danych. Implementacja, na której się opieramy, ma jednak inną specyfikę. Pętla główna (alg. \ref{alg:edmonds_mwpm}) wykonuje się do momentu znalezienia skojarzenia doskonałego. Pomiędzy powiększeniami skojarzenia zachodzi maksymalnie $O(n)$ aktualizacji potencjałów dualnych (każda aktualizacja dualnych albo wprowadza nową krawędź 
+dopuszczalną, albo odblokowuje kwiat, a tych jest $O(n)$), co w pesymistycznym wariancie wymusza powtórzenie głównej pętli $O(n^2)$ razy. Podczas każdej takiej iteracji wywoływane są pełne przeszukania struktur, co kosztuje $O(m)$ operacji. Całkowita złożoność tej konkretnej implementacji wynosi więc $O(n^2 \cdot m) = O(n^2 \cdot n^2) = O(n^4)$.
+
+\newpage
+\section{Specyfikacja wejścia i wyjścia}
+
+Program został zaimplementowany jako aplikacja konsolowa, która wczytuje instancję problemu z pliku tekstowego. Wynik działania algorytmu jest domyślnie wypisywany na standardowe wyjście (konsolę) w czytelnej dla użytkownika formie, a opcjonalnie może zostać zapisany do pliku tekstowego.
+
+\subsection{Format danych wejściowych}
+
+Plik wejściowy jest standardowym plikiem tekstowym (np. z rozszerzeniem \texttt{.txt}). Jego struktura opiera się na następujących zasadach:
+\begin{itemize}
+    \item W pierwszej linii znajduje się pojedyncza liczba całkowita dodatnia $N$, określająca całkowitą liczbę wierzchołków w grafie.
+    \item W kolejnych $N$ liniach znajduje się macierz sąsiedztwa modelująca graf pełny. Każdy wiersz zawiera dokładnie $N$ wartości oddzielonych białymi znakami (pojedynczą spacją lub tabulatorem).
+\end{itemize}
+
+Wartości w macierzy reprezentują wagi krawędzi (odległości) i są liczbami naturalnymi. Macierz jest symetryczna, posiada zera na głównej przekątnej, a zapisane w niej odległości spełniają nierówność trójkąta.
+
+\subsection{Format danych wyjściowych}
+
+Plik wyjściowy jest standardowym plikiem tekstowym (np. z rozszerzeniem \texttt{.txt}). Jego struktura opiera się na następujących zasadach:
+
+\begin{itemize}
+    \item Pierwsza linia rozpoczyna się od frazy ,,\texttt{Total Distance:\ }'', po której następuje całkowity koszt znalezionego rozwiązania (suma wag krawędzi tworzących cykl Hamiltona).
+    \item Druga linia rozpoczyna się od frazy ,,\texttt{Route:\ }'', po której następuje reprezentacja wyznaczonego cyklu Hamiltona. Identyfikatory wierzchołków wypisane są w kolejności odwiedzania i rozdzielone znakiem pauzy (\texttt{-}). Pierwszy i ostatni wierzchołek w tej linii są identyczne, domykając cykl.
+\end{itemize}
+
+\subsection{Przykłady}
+
+Przeanalizujemy zawartość pliku wejściowego oraz wyjściowego na przykładzie grafu $G$ przedstawionego na Rysunku \ref{rys:przyklad}. 
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[scale=1.8, auto, swap]
+        \foreach \i in {0,...,4}
+            \node[circle, draw, fill=gray!10] (\i) at ({90+72*\i}:1.5) {\i};
+
+        \draw (0) -- (1) node[midway, above left] {1};
+        \draw (1) -- (2) node[midway, left] {1};
+        \draw (2) -- (3) node[midway, below] {1};
+        \draw (3) -- (4) node[midway, right] {1};
+        \draw (4) -- (0) node[midway, above right] {1};
+
+        \draw[dashed, gray] (0) -- (2) node[pos=0.3, left, black] {2};
+        \draw[dashed, gray] (0) -- (3) node[pos=0.3, right, black] {2};
+        \draw[dashed, gray] (1) -- (3) node[pos=0.7, right, black] {2};
+        \draw[dashed, gray] (1) -- (4) node[pos=0.5, below, black] {2};
+        \draw[dashed, gray] (2) -- (4) node[pos=0.7, above, black] {2};
+    \end{tikzpicture}
+    \caption{Przykładowy graf wejściowy $G$.}
+    \label{rys:przyklad}
+\end{figure}
+
+Graf składa się z pięciu wierzchołków ($N=5$). Krawędzie ułożone wzdłuż obwodu pięciokąta mają wagę $1$, natomiast wszystkie ,,przekątne'' (łączące wierzchołki niebędące bezpośrednimi sąsiadami na obwodzie) mają wagę $2$. Warto zauważyć, że wszystkie wagi krawędzi to liczby naturalne i spełniona jest tu nierówność trójkąta.
+
+Zawartość pliku wejściowego dla grafu $G$ przedstawia Rysunek \ref{lst:input}.
+
+\begin{figure}[H]
+\begin{verbatim}
+5
+0 1 2 2 1
+1 0 1 2 2
+2 1 0 1 2
+2 2 1 0 1
+1 2 2 1 0
+\end{verbatim}
+\caption{Zawartość pliku wejściowego dla grafu $G$.}
+\label{lst:input}
+\end{figure}
+
+Wynik działania programu dla powyższej instancji został zilustrowany na Rysunku \ref{lst:output}. Pierwsza linia pliku wyjściowego precyzuje całkowity koszt znalezionej trasy, wynoszący w tym przypadku $5$. Jest to suma wag pięciu krawędzi wchodzących w skład wyznaczonego cyklu. Druga linia określa dokładną kolejność odwiedzania wierzchołków. 
+
+\begin{figure}[H]
+\begin{verbatim}
+Total Distance: 5
+Route: 0-1-2-3-4-0
+\end{verbatim}
+\caption{Zawartość pliku wyjściowego dla grafu $G$.}
+\label{lst:output}
+\end{figure}
+
+\noindent
+W prezentowanym przykładzie wyznaczona ścieżka (\texttt{0-1-2-3-4-0}) przebiega wyłącznie po krawędziach o wadze $1$ (Rysunek \ref{rys:optymalny}).
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[scale=1.8]
+        \foreach \i in {0,...,4}
+            \node[circle, draw, fill=gray!10] (\i) at ({90+72*\i}:1.5) {\i};
+
+        \draw (0) -- (1) node[midway, above left] {1};
+        \draw (1) -- (2) node[midway, left] {1};
+        \draw (2) -- (3) node[midway, below] {1};
+        \draw (3) -- (4) node[midway, right] {1};
+        \draw (4) -- (0) node[midway, above right] {1};
+        
+        \draw[dashed, gray] (0) -- (2) node[pos=0.3, left, black] {2};
+        \draw[dashed, gray] (0) -- (3) node[pos=0.3, right, black] {2};
+        \draw[dashed, gray] (1) -- (3) node[pos=0.7, right, black] {2};
+        \draw[dashed, gray] (1) -- (4) node[pos=0.5, below, black] {2};
+        \draw[dashed, gray] (2) -- (4) node[pos=0.7, above, black] {2};
+        
+        \draw[line width=2pt, blue] (0) -- (1) -- (2) -- (3) -- (4) -- (0);
+        
+    \end{tikzpicture}
+    \caption{Rozwiązanie zapisane w pliku wyjściowym.}
+    \label{rys:optymalny}
+\end{figure}
+
+\newpage
+\section{Generowanie instancji testowych}
+
+Aplikacja została zrealizowana w środowisku .NET 9 jako program konsolowy.
+
+\subsection{Składnia poleceń}
+
+Podstawowa składnia wywołania programu prezentuje się następująco:
+
+\begin{verbatim}
+tsp-generator.exe --start <wartość> [opcje]
+\end{verbatim}
+
+\subsubsection{Dostępne argumenty i flagi}
+
+Program wymaga podania rozmiaru startowego oraz przyjmuje szereg argumentów opcjonalnych modyfikujących proces generowania:
+
+\begin{itemize}
+    \item \textbf{\texttt{---start <wartość>}} (argument wymagany) -- określa początkową liczbę wierzchołków dla pierwszej instancji w generowanej serii.
+    
+    \item \textbf{\texttt{---step <wartość>}} (argument opcjonalny, domyślnie: 1) -- rozmiar kroku, o jaki zwiększana jest liczba wierzchołków w każdej kolejnej generowanej instancji.
+    
+    \item \textbf{\texttt{-c, ---count <wartość>}} (argument opcjonalny, domyślnie: 1) -- łączna liczba instancji (plików) do wygenerowania w ramach jednego uruchomienia.
+    
+    \item \textbf{\texttt{-s, ---size <wartość>}} (argument opcjonalny, domyślnie: 1000) -- maksymalna wartość współrzędnych (na osiach X i Y) dla losowanych wierzchołków.
+    
+    \item \textbf{\texttt{-d, ---dir <ścieżka>}} (argument opcjonalny, domyślnie: \texttt{data}) -- ścieżka do katalogu docelowego, w którym zostaną zapisane pliki z rozszerzeniem \texttt{.txt}.
+    
+    \item \textbf{\texttt{---help}} -- wyświetla na standardowym wyjściu instrukcję obsługi programu.
+\end{itemize}
+
+\subsection{Przykłady użycia}
+
+\subsubsection*{Uruchomienie podstawowe (pojedyncza instancja)}
+
+\begin{verbatim}
+tsp-generator.exe --start 50
+\end{verbatim}
+
+\noindent
+Program wygeneruje pojedynczy graf składający się z 50 wierzchołków, wylosuje współrzędne z przedziału od 0 do 1000 i zapisze wynik w domyślnym katalogu \texttt{data}.
+
+\subsubsection*{Generowanie serii instancji testowych}
+
+\begin{verbatim}
+tsp-generator.exe --start 100 --step 10 -c 10 -d test_set
+\end{verbatim}
+
+Polecenie wygeneruje serię 10 plików (\texttt{-c 10}), zaczynając od rozmiaru 100 wierzchołków (\texttt{--start 100}) i zwiększając go o 10 w każdym kolejnym kroku (\texttt{--step 10}). Pliki zostaną zapisane w katalogu \texttt{test\_set} (\texttt{-d}).
+
+\subsubsection*{Generowanie na mniejszej płaszczyźnie współrzędnych}
+
+\begin{verbatim}
+tsp-generator.exe --start 20 --size 500
+\end{verbatim}
+
+Program wygeneruje graf 20-wierzchołkowy, w którym maksymalna wartość współrzędnych punktów na osiach X i Y nie przekroczy 500 (\texttt{--size}).
+
+\newpage
+\section{Instrukcja uruchomienia programu}
+
+Aplikacja została zrealizowana w środowisku .NET 9 jako program konsolowy.
+
+\subsection{Składnia poleceń}
+
+Podstawowa składnia wywołania programu (zakładając, że skompilowany plik wykonywalny nosi nazwę \texttt{tsp-approximation.exe}) prezentuje się następująco:
+
+\begin{verbatim}
+tsp-approximation.exe <FilePath> [opcje]
+\end{verbatim}
+
+\subsection{Dostępne argumenty i flagi}
+
+Program przyjmuje jeden argument pozycyjny oraz dodatkowe flagi modyfikujące jego zachowanie:
+
+\begin{itemize}
+    \item \textbf{\texttt{<FilePath>}} (argument wymagany) -- argument pozycyjny podawany bezpośrednio po nazwie programu. Określa ścieżkę do pliku tekstowego zawierającego macierz sąsiedztwa grafu.
+    \item \textbf{\texttt{-o, ---output <ścieżka>}} (argument opcjonalny) -- pozwala na zdefiniowanie ścieżki do pliku wyjściowego, w którym zapisany zostanie wynik działania wybranego algorytmu. Jeśli parametr ten zostanie pominięty, wynik zostanie wypisany wyłącznie na standardowe wyjście (konsolę).
+    \item \textbf{\texttt{-d, ---double-tree}} (flaga opcjonalna) -- jej podanie wymusza użycie algorytmu \\ 2-aproksymacyjnego. Jeśli flaga nie zostanie ustawiona, program domyślnie wykorzysta algorytm Christofidesa.
+    \item \textbf{\texttt{---help}} -- wbudowana flaga, która wyświetla na ekranie krótką instrukcję obsługi i opisy dostępnych argumentów w języku angielskim.
+\end{itemize}
+
+\subsection{Przykłady użycia}
+
+\subsubsection*{Uruchomienie domyślne (algorytm Christofidesa):}
+
+\begin{verbatim}
+tsp-approximation.exe graph.txt
+\end{verbatim}
+
+Program wczyta graf z pliku \texttt{graph.txt}, wykona obliczenia za pomocą algorytmu Christofidesa, a wynik zaprezentuje bezpośrednio w konsoli.
+
+\subsubsection*{Uruchomienie algorytmu podwójnego drzewa z zapisem do pliku:}
+\begin{verbatim}
+tsp-approximation.exe graph.txt -d -o result.txt
+\end{verbatim}
+Program wykorzysta algorytm 2-aproksymacyjny (\texttt{-d}) i zapisze sformatowany cykl Hamiltona oraz jego koszt do pliku \texttt{result.txt} (\texttt{-o}).
+
+\subsubsection*{Alternatywny zapis z pełnymi nazwami flag:}
+\begin{verbatim}
+tsp-approximation.exe graph.txt --double-tree --output result.txt
+\end{verbatim}
+Wywołanie to jest w pełni równoważne z przykładem drugim, ale wykorzystuje długie aliasy poleceń.
+
+\newpage
+\printbibliography
+
+% 1) algorytm MST + cały algorytm + opis + jakość itp. -> Marcin
+% 2) perfect matching + opis algorytmu Christofides -> Radek
+% 3) projekt + opis wejścia/wyjścia + przykład, przedstawienie problemu, pliki testowe, generator testów, zapis do CSV-ki -> Adam
+
+
+
+\end{document}
