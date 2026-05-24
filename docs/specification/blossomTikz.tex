@@ -1,0 +1,104 @@
+\begin{figure}[H]
+    \centering
+
+    % ── RYSUNEK PRZED KONTRAKCJĄ ──────────────────────────────────────────
+    \begin{subfigure}[b]{\linewidth}
+        \centering
+        \begin{tikzpicture}[
+            scale=1.2,
+            vtx/.style      = {circle, draw, fill=gray!10, minimum size=0.65cm, inner sep=1pt},
+            base/.style     = {circle, draw, fill=orange!40, minimum size=0.65cm, inner sep=1pt},
+            free/.style     = {circle, draw, fill=green!25, minimum size=0.65cm, inner sep=1pt},
+            matched/.style  = {line width=2pt, blue!70!black},
+            unmatched/.style= {thick, black},
+            annot/.style    = {draw=none, fill=none, font=\small\itshape, inner sep=1pt}
+        ]
+            % ── węzły ──
+            \node[free] (r) at (0,   0)    {$r$};
+            \node[vtx]  (v) at (1.6, 0)    {$v$};
+            \node[base] (b) at (3.2, 0)    {$b$};
+            \node[vtx]  (x) at (4.2, 1.3)  {$x$};
+            \node[vtx]  (y) at (5.8, 0.75) {$y$};
+            \node[vtx]  (z) at (5.8,-0.75) {$z$};
+            \node[vtx]  (q) at (4.2,-1.3)  {$q$};
+
+            % ── krawędzie łodygi ──
+            \draw[unmatched] (r) -- (v);
+            \draw[matched]   (v) -- (b);
+
+            % ── krawędzie cyklu (kwiatu) ──
+            \draw[unmatched] (b) -- (x);
+            \draw[matched]   (x) -- (y);
+            \draw[unmatched] (y) -- (z);
+            \draw[matched]   (z) -- (q);
+            \draw[unmatched] (q) -- (b);
+
+            % ── adnotacja: wierzchołek wolny ──
+            \node[annot, above=4pt of r] {wolny};
+
+            % ── adnotacja: wierzchołek bazowy ──
+            \node[annot, above left=4pt and -1em of b] {bazowy};
+
+            % ── klamra + etykieta „łodyga" ──
+            \draw[decorate, decoration={brace, amplitude=6pt, mirror},
+                  thick, gray!70]
+                ([yshift=-0.5em]r.south west) -- ([yshift=-0.5em]b.south east)
+                node[midway, below=8pt, draw=none, fill=none,
+                     font=\small, text=gray!80] {łodyga};
+
+            % ── klamra + etykieta „kwiat" ──
+            \draw[decorate, decoration={brace, amplitude=6pt}, thick, gray!70]
+                ($(b.west |- x.north) + (0, 0.3)$) -- ($(y.east |- x.north) + (0, 0.3)$)
+                node[midway, above=8pt, draw=none, fill=none, font=\small, text=gray!80] {kwiat $B$};
+
+        \end{tikzpicture}
+        \caption{Graf przed kontrakcją. Kwiat $B = \{b, x, y, z, q\}$ to cykl długości~5
+                 z $k{=}2$ krawędziami skojarzenia (niebieskie).
+                 Wierzchołek bazowy $b$ (pomarańczowy) ma obie swoje krawędzie w cyklu
+                 poza skojarzeniem.
+                 Łodyga $r$--$v$--$b$ łączy kwiat z wolnym wierzchołkiem $r$ (zielony);
+                 jej krawędź $vb$ należy do skojarzenia.}
+    \end{subfigure}
+
+    \vspace{0.8cm}
+
+    % ── RYSUNEK PO KONTRAKCJI ─────────────────────────────────────────────
+    \begin{subfigure}[b]{\linewidth}
+        \centering
+        \begin{tikzpicture}[
+            scale=1.2,
+            vtx/.style      = {circle, draw, fill=gray!10, minimum size=0.65cm, inner sep=1pt},
+            free/.style     = {circle, draw, fill=green!25, minimum size=0.65cm, inner sep=1pt},
+            super/.style    = {circle, draw=orange!70!black, fill=orange!20,
+                               minimum size=1.4cm, line width=1.5pt, inner sep=1pt},
+            matched/.style  = {line width=2pt, blue!70!black},
+            unmatched/.style= {thick, black},
+            annot/.style    = {draw=none, fill=none, font=\small\itshape, inner sep=1pt}
+        ]
+            \node[free]  (r) at (0,   0) {$r$};
+            \node[vtx]   (v) at (1.6, 0) {$v$};
+            \node[super] (B) at (3.4, 0) {$B$};
+
+            \draw[unmatched] (r) -- (v);
+            \draw[matched]   (v) -- (B);
+
+            \node[annot, above=4pt of r] {wolny};
+            \node[annot, above=5pt of B] {super-wierzchołek};
+
+        \end{tikzpicture}
+        \caption{Graf po kontrakcji kwiatu $B$ do pojedynczego super-wierzchołka.
+                 Łodyga pozostaje niezmieniona.}
+    \end{subfigure}
+
+    % ── LEGENDA ──────────────────────────────────────────────────────────
+    \vspace{0.4cm}
+    \begin{tikzpicture}
+        \draw[line width=2pt, blue!70!black] (0, 0.4) -- (0.8, 0.4)
+            node[right, draw=none, fill=none, font=\small] {krawędź należąca do skojarzenia $M$};
+        \draw[thick, black] (0, 0) -- (0.8, 0)
+            node[right, draw=none, fill=none, font=\small] {krawędź nienależąca do $M$};
+    \end{tikzpicture}
+
+    \caption{Kontrakcja kwiatu w algorytmie Edmondsa.}
+    \label{rys:kwiat_kontrakcja}
+\end{figure}
